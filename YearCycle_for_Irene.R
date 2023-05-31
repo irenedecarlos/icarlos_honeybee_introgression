@@ -117,8 +117,8 @@ data_rec <- function(datafile, colonies, year, population) {
                               nCsdAlColony         = sapply(colonies@colonies, function(x) nCsdAlleles(x, collapse = TRUE)),
                               nCsdApiary           = rep(nCsdAlleles(colonies, collapse = TRUE), queens@nInd),
                               pHomBrood            = calcQueensPHomBrood(queens),
-                              gvQueens_QueenTrait  = sapply(getGv(colonies, caste = "queen"), function(x) x[1,1]),
-                              gvQueens_WorkerTrait = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2])
+                              #gvQueens_QueenTrait  = sapply(getGv(colonies, caste = "queen"), function(x) x[1,1]),
+                              #gvQueens_WorkerTrait = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2])
                    ))}
 colonyRecords = NULL
 
@@ -229,8 +229,8 @@ year=1
       age1 <- list(Mel = createMultiColony(x = queens$Mel, n = IrelandSize),
                    Car = createMultiColony(x = queens$Car, n = CarSize))
       print("Record initial colonies")
-      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
-      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
+      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
+      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
 
       # If not, promote the age0 to age1, age1 to age2 and remove age2 colonies
     } else {
@@ -488,8 +488,8 @@ year=1
     # Merge all age 0 colonies (from both periods)
     age0 <- list(Mel = c(age0p1$Mel, age0p2$Mel),
                  Car = c(age0p1$Car, age0p2$Car))
-    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
-    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
+    #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
+    #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
 
     # Period3 ------------------------------------------------------------------
     # Collapse age0 queens
@@ -512,11 +512,14 @@ year=1
     age0$Mel <- maintainIrelandSize(age0 = age0$Mel, age1 = age1$Mel)
     age0$Car <- maintainCarSize(age0 = age0$Car, age1 = age1$Car)
 
-    for (subspecies in c("Mel", "MelCross", "Car")) {
-      if ((nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) != apiarySize) {
-        stop(paste0("The number of colonies for ", subspecies, " does not match the apiary size!"))
-      }
-    }
+    for (subspecies in c("Mel", "Car")) {
+      if ((nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) == IrelandSize
+          | (nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) == CarSize) {
+        (print("The number of colonies matches the pupulation size"))
+       } 
+      else 
+        {stop(paste0("The number of colonies for ", subspecies, " does not match the population size!"))}
+     }
 
   } # Year-loop
 
