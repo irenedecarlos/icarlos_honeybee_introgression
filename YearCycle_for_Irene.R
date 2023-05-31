@@ -97,7 +97,7 @@ p3collapseAge0 <- 0.25      # Percentage of age 0 colonies that collapse in peri
 p3collapseAge1 <- 0.3       # Percentage of age 2 colonies that collapse in period 3
 
 #Import parameters -------------------------------------------------------------------
-pImport <- 0.5              # Percentage import from carnica to mellifera
+pImport <- 0.3              # Percentage import from carnica to mellifera
 
 # Create data frames for recording the number of age0 and age1 colonies, csd variability and for recording cpu time
 loopTime <- data.frame(Rep = NA, tic = NA, toc = NA, msg = NA, time = NA)
@@ -280,13 +280,24 @@ year=1
     virginDonor <- list(Mel = sample.int(n = nColonies(age1$Mel), size = 1),
                         Car = sample.int(n = nColonies(age1$Car), size = 1))
     # Virgin queens for splits!
+    #Aqui hago el pull de las age0 y entonces al crear las virgin queens creo
+    #el numero de virgin queens de melifera que no se van a cruzar con importadas
+    #el número de virgin queens de carnica más otras maás que son = numero de mel cruce con importadas
+    tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport))
+    age0p1 <- list(Mel = tmp$remnant,
+                   MelImport = tmp$pulled,
+                   Car = c(age0p1$Car, tmp$Car$split))
     virginQueens <- list(Mel = createVirginQueens(age1$Mel[[virginDonor$Mel]], nInd = nColonies(age0p1$Mel)),
-                         Car = createVirginQueens(age1$Car[[virginDonor$Car]], nInd = nColonies(age0p1$Car)))
+                         Car = createVirginQueens(age1$Car[[virginDonor$Car]], nInd = nColonies(age0p1$Car)+nColonies(age0p1$MelImport)))
 
     # Requeen the splits --> queens are now 0 years old
-    age0p1 <- list(Mel = reQueen(age0p1$Mel, queen = virginQueens$Mel),
-                   Car = reQueen(age0p1$Car, queen = virginQueens$Car))
-
+    
+    nColoniesMelImport<-nColonies(age0p1$MelImport)
+    nColoniesCar<-nColonies(age0p1$Car)+nColonies(age0p1$MelImport)
+    age0p1 <- list(Mel = c(reQueen(age0p1$Mel, queen = (virginQueens$Mel)) ,
+                  reQueen(age0p1$MelImport, queen = (virginQueens$Car)[1:nColoniesMelImport])),
+                   Car = reQueen(age0p1$Car, queen = virginQueens$Car[(nColoniesMelImport+1):nColoniesCar]))
+  
     # Swarm a percentage of age1 colonies
     print("Swarm colonies, P1")
     print(Sys.time())
