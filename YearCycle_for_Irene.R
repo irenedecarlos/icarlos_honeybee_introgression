@@ -26,7 +26,7 @@ maintainIrelandSize <- function(age0 = NULL, age1 = NULL) {
   }
 }
 
-maintainCarSize <- function(age0 = NULL, age1 = NULL) {
+maintainCarLigSize <- function(age0 = NULL, age1 = NULL) {
   if ((nColonies(age0) + nColonies(age1)) > CarSize) { # check if the sum of all colonies is greater than apiary size
     IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
     splits0 <- pullColonies(age0, ID = IDsplits) # pull the splits out of age 0
@@ -49,28 +49,7 @@ maintainCarSize <- function(age0 = NULL, age1 = NULL) {
   }
 }
 
-maintainLigSize <- function(age0 = NULL, age1 = NULL) {
-  if ((nColonies(age0) + nColonies(age1)) > LigSize) { # check if the sum of all colonies is greater than apiary size
-    IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
-    splits0 <- pullColonies(age0, ID = IDsplits) # pull the splits out of age 0
-    age0split <- splits0$pulled # create an object for age 0 splits
-    age0swarm <- splits0$remnant # create an object for swarms and superseded colonies
-    age0needed <- LigSize - nColonies(age1) # calculate the number of age 0 colonies that are needed to fill up the apiary
-    splitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
-    if (age0needed <= nColonies(age0swarm)) { # check if the number of age 0 colonies needed is lower or equal to age 0 swarms
-      swarmID <- sample(getId(age0swarm), age0needed) # if yes, select the ids of swarms that will stay in apiary
-      swarmTMP <- pullColonies(age0swarm, ID = swarmID) # pull out those selected age0 swarms
-      age0 <- swarmTMP$pulled # put selected swarms to age 0 object
-    } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is grater than number of swarm select splits
-      nSplitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
-      splitId <- sample(getId(age0split), nSplitsNeeded) # select ids of splits
-      splitTmp <- pullColonies(age0split, ID = splitId) # pull the splits
-      splits <- splitTmp$pulled # select pulled splits
-      age0 <- c(age0swarm, splits) # combine splits and swarms in age 0 object
-    }
-    return(age0)
-  }
-}
+
 # Load packages
 library(AlphaSimR)
 library(ggplot2)
@@ -617,15 +596,13 @@ year=1
     print(Sys.time())
 
     age0$Mel <- maintainIrelandSize(age0 = age0$Mel, age1 = age1$Mel)
-    age0$Car <- maintainCarSize(age0 = age0$Car, age1 = age1$Car)
-    age0$Lig <- maintainLigSize(age0 = age0$Lig, age1 = age1$Lig)
-
+    age0$Car <- maintainCarLigSize(age0 = age0$Car, age1 = age1$Car)
+    age0$Lig <- maintainCarLigSize(age0 = age0$Lig, age1 = age1$Lig)
+    
     for (subspecies in c("Mel", "Car","Lig")) {
       if ((nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) == IrelandSize
-          | (nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) == CarSize
-        | (nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) == LigSize)
+          | (nColonies(age0[[subspecies]]) + nColonies(age1[[subspecies]])) == CarSize)
         {
-        (print("The number of colonies matches the population size"))
        } 
       else 
         {stop(paste0("The number of colonies for ", subspecies, " does not match the population size!"))}
