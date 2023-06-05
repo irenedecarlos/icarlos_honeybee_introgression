@@ -2,30 +2,41 @@
 # Clean workspace
 rm(list = ls())
 getwd()
+
 # Define functions
 maintainIrelandSize <- function(age0 = NULL, age1 = NULL) {
-  if ((nColonies(age0) + nColonies(age1)) > IrelandSize) { # check if the sum of all colonies is greater than apiary size
+  if ((nColonies(age0) + nColonies(age1)) > IrelandSize) { # check if the sum of all colonies is greater than population size
     IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
     splits0 <- pullColonies(age0, ID = IDsplits) # pull the splits out of age 0
     age0split <- splits0$pulled # create an object for age 0 splits
     age0swarm <- splits0$remnant # create an object for swarms and superseded colonies
+    splitsI<-pullColonies(age0split, ID=IdImportColonies) #pull the imports out of split
+    age0splitImport <- splitsI$pulled # create an object for imported splits
+    age0splitMel <- splitsI$remnant # create an object for non imported splits
     age0needed <- IrelandSize - nColonies(age1) # calculate the number of age 0 colonies that are needed to fill up the apiary
-    splitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
     if (age0needed <= nColonies(age0swarm)) { # check if the number of age 0 colonies needed is lower or equal to age 0 swarms
       swarmID <- sample(getId(age0swarm), age0needed) # if yes, select the ids of swarms that will stay in apiary
       swarmTMP <- pullColonies(age0swarm, ID = swarmID) # pull out those selected age0 swarms
       age0 <- swarmTMP$pulled # put selected swarms to age 0 object
-    } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is grater than number of swarm select splits
-      nSplitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
-      splitId <- sample(getId(age0split), nSplitsNeeded) # select ids of splits
-      splitTmp <- pullColonies(age0split, ID = splitId) # pull the splits
-      splits <- splitTmp$pulled # select pulled splits
-      age0 <- c(age0swarm, splits) # combine splits and swarms in age 0 object
-    }
+    } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is greater than number of importedsplits select splits
+      nSplitNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
+        if (nSplitNeeded>nColonies(age0splitImport)){
+        age0<- c(age0swarm,age0splitImport)
+        nSplitMelNeeded <- age0needed - nColonies(age0) # calculate the number of split Mel needed
+        splitMelId <- sample(getId(age0splitMel), nSplitMelNeeded) # select ids of split Mel
+        splitMelTmp <- pullColonies(age0splitMel, ID = splitMelId) # pull the splits
+        splitsMel<- splitMelTmp$pulled # select pulled splits
+        age0<-c(age0,splitsMel)
+        } else {
+        splitImportId <- sample(getId(age0splitImport), nSplitNeeded) # select ids of splitimport
+        ImportTmp <- pullColonies(age0splitImport, ID = splitImportId) # pull the splitimport
+        splitImports<- ImportTmp$pulled # select pulled splitimport
+        age0 <- c(age0swarms, splitImports) # combine splits and swarms in age 0 object
+        }
+     }
     return(age0)
   }
 }
-
 maintainCarLigSize <- function(age0 = NULL, age1 = NULL) {
   if ((nColonies(age0) + nColonies(age1)) > CarSize) { # check if the sum of all colonies is greater than apiary size
     IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
@@ -40,6 +51,7 @@ maintainCarLigSize <- function(age0 = NULL, age1 = NULL) {
       age0 <- swarmTMP$pulled # put selected swarms to age 0 object
     } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is grater than number of swarm select splits
       nSplitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
+      
       splitId <- sample(getId(age0split), nSplitsNeeded) # select ids of splits
       splitTmp <- pullColonies(age0split, ID = splitId) # pull the splits
       splits <- splitTmp$pulled # select pulled splits
@@ -126,7 +138,7 @@ data_rec <- function(datafile, colonies, year, population) {
 colonyRecords = NULL
 
 # Start of the rep-loop ---------------------------------------------------------------------
-for (Rep in 1:nRep) {
+#for (Rep in 1:nRep) {
   # Rep <- 1 (you can use this to check if your code is running alright for one whole loop)
   cat(paste0("Rep: ", Rep, "/", nRep, "\n"))
   tic(paste0(nYear, 'y loop'))         # Measure cpu time
@@ -207,7 +219,7 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar,nLig),1,segSites = 100)
 
   #alleleFreqBaseQueensCar <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Car),
   #                                 sex = virginQueens$Car@sex)
-
+ 
   #alleleFreqBaseQueensMel <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Mel),
   #                                           sex = virginQueens$Mel@sex)
   #Get allele freq for csd locus
@@ -222,13 +234,14 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar,nLig),1,segSites = 100)
   #alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
 
 year=1
+#year= year+1
   # Start the year-loop ------------------------------------------------------------------
-  for (year in 1:nYear) {
+ # for (year in 1:nYear) {
     print("Starting the cycle")
     #year <- 1 (Use this to check that things are working without setting the whole for loop off )
     #year <- year + 1
     cat(paste0("Year: ", year, "/", nYear, "\n"))
-
+    
     # If this is the first year, create some colonies to start with
     if (year == 1) {
       print("Creating initial colonies")
@@ -300,6 +313,8 @@ year=1
     #el numero de virgin queens de melifera que no se van a cruzar con importadas
     #el número de virgin queens de carnica más otras más que son = numero de mel cruce con importadas
     tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport))
+    IdImportColonies<-getId(tmp$pulled)
+    
     age0p1 <- list(Mel = tmp$remnant,
                    MelImport = tmp$pulled,
                    Car = c(age0p1$Car, tmp$Car$split),
@@ -317,7 +332,8 @@ year=1
                   reQueen(age0p1$MelImport, queen = c((virginQueens$Car)[1:(nColoniesMelImport/2)],(virginQueens$Lig)[1:(nColoniesMelImport/2)]))),
                    Car = reQueen(age0p1$Car, queen = virginQueens$Car[((nColoniesMelImport/2)+1):nColoniesCar]),
                   Lig = reQueen(age0p1$Lig, queen = virginQueens$Lig[((nColoniesMelImport/2)+1):nColoniesLig]))
-  
+    
+   
     # Swarm a percentage of age1 colonies
     print("Swarm colonies, P1")
     print(Sys.time())
@@ -588,7 +604,6 @@ year=1
                  Car = selectColonies(age1$Car, p = (1 - p3collapseAge1)),
                  Lig = selectColonies(age1$Lig, p = (1 - p3collapseAge1)))
     age2 <- list(Mel = NULL, MelCross = NULL, Car = NULL) #We don't need this but just to show the workflow!!!
-
 
     # Maintain the number of colonies ------------------------------------------
     # Keep all of age1, age0 swarmed so we build it up with some splits, while we remove (sell) the other splits
