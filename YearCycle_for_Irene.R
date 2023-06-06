@@ -20,18 +20,18 @@ maintainIrelandSize <- function(age0 = NULL, age1 = NULL) {
       age0 <- swarmTMP$pulled # put selected swarms to age 0 object
     } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is greater than number of importedsplits select splits
       nSplitNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
-        if (nSplitNeeded>nColonies(age0splitImport)){
-        age0<- c(age0swarm,age0splitImport)
-        nSplitMelNeeded <- age0needed - nColonies(age0) # calculate the number of split Mel needed
-        splitMelId <- sample(getId(age0splitMel), nSplitMelNeeded) # select ids of split Mel
+        if (nSplitNeeded>nColonies(age0splitImport)){ #check if the number of importedsplits needed is greater than the number of importedsplits we have
+        age0<- c(age0swarm,age0splitImport) #add all the imported splits to age 0 object
+        nSplitMelNeeded <- age0needed - nColonies(age0) # calculate the number of not imported splits needed
+        splitMelId <- sample(getId(age0splitMel), nSplitMelNeeded) # select ids of not imported split 
         splitMelTmp <- pullColonies(age0splitMel, ID = splitMelId) # pull the splits
         splitsMel<- splitMelTmp$pulled # select pulled splits
-        age0<-c(age0,splitsMel)
-        } else {
-        splitImportId <- sample(getId(age0splitImport), nSplitNeeded) # select ids of splitimport
-        ImportTmp <- pullColonies(age0splitImport, ID = splitImportId) # pull the splitimport
-        splitImports<- ImportTmp$pulled # select pulled splitimport
-        age0 <- c(age0swarms, splitImports) # combine splits and swarms in age 0 object
+        age0<-c(age0,splitsMel) #add them to age0 object
+        } else {  #if the imported splits needed are lower than the imported splits we have
+        splitImportId <- sample(getId(age0splitImport), nSplitNeeded) # select ids of split import
+        ImportTmp <- pullColonies(age0splitImport, ID = splitImportId) # pull the split import
+        splitImports<- ImportTmp$pulled # select pulled split import
+        age0 <- c(age0swarms, splitImports) # combine imported splits and swarms in age 0 object
         }
      }
     return(age0)
@@ -51,7 +51,6 @@ maintainCarLigSize <- function(age0 = NULL, age1 = NULL) {
       age0 <- swarmTMP$pulled # put selected swarms to age 0 object
     } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is grater than number of swarm select splits
       nSplitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
-      
       splitId <- sample(getId(age0split), nSplitsNeeded) # select ids of splits
       splitTmp <- pullColonies(age0split, ID = splitId) # pull the splits
       splits <- splitTmp$pulled # select pulled splits
@@ -87,10 +86,10 @@ nSegSites = 100              # Number of segregating sites
 # Population parameters -------------------------------------------------------------------
 nRep <- 1                     # Number of repeats
 nYear <- 10                   # Number of years
-#apiarySize <- 300             # Number of colonies in the apiary
-IrelandSize<-300            #remove apiary size from code
-CarSize<-100
-LigSize<-100
+#apiarySize <- 300            # Number of colonies in the apiary
+IrelandSize<-300              #Ireland population size
+CarSize<-100                  #Carnica pop size
+LigSize<-100                  #Ligustica pop size
 nWorkers <- 10                # Number of workers in a full colony
 nDrones <- 50                 # Number of drones in a full colony (typically nWorkers * 0.2 (not in the example))
 pFathers <- nFathersPoisson   # Number of drones the queen mates with (could also be a function)
@@ -132,8 +131,8 @@ data_rec <- function(datafile, colonies, year, population) {
                               nCsdAlColony         = sapply(colonies@colonies, function(x) nCsdAlleles(x, collapse = TRUE)),
                               nCsdApiary           = rep(nCsdAlleles(colonies, collapse = TRUE), queens@nInd),
                               pHomBrood            = calcQueensPHomBrood(queens),
-                              #gvQueens_QueenTrait  = sapply(getGv(colonies, caste = "queen"), function(x) x[1,1]),
-                              #gvQueens_WorkerTrait = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2])
+                              gvQueens_QueenHoneyYield  = sapply(getGv(colonies, caste = "queen"), function(x) x[1,1]),
+                              gvQueens_QueenFitness = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2])
                    ))}
 colonyRecords = NULL
 
@@ -162,7 +161,8 @@ colonyRecords = NULL
   # load("~/Desktop/GitHub/lstrachan_honeybee_sim/YearCycleSimulation/PlottingData/FounderGenomes_ThreePop_16chr.RData")
 
 # quick haplo to get the founder genomes for now.
-founderGenomes<- quickHaplo(sum(nMelN,nCar,nLig),1,segSites = 100)
+founderGenomes<- quickHaplo(sum(nMelN,nCar,nLig),4,segSites = 1000)
+  
   # STEP 2: Create SP object and write in the global simulation/population parameters
   SP <- SimParamBee$new(founderGenomes, csdChr = ifelse(nChr >= 3, 3, 1), nCsdAlleles = 128)
   SP$nWorkers <- nWorkers
@@ -175,23 +175,21 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar,nLig),1,segSites = 100)
   SP$setTrackRec(TRUE)            # Track the recombination
   SP$addSnpChip(nSnpPerChr = 10)   # Add a SNP chip with 3 SNPs per chromosome
   csdChr <- SP$csdChr             # define csd chromomsome
-  # Skip this for now
-  # Add traits - taken from the QuantGen vignette 
-  #mean <- c(20, 0)
-  #varA <- c(1, 1 / SP$nWorkers)
-  #corA <- matrix(data = c( 1.0, -0.5,
-  #                         -0.5,  1.0), nrow = 2, byrow = TRUE)
-  #SP$addTraitA(nQtlPerChr = 100, mean = mean, var = varA, corA = corA,
-  #             name = c("queenTrait", "workersTrait"))
-
-  #varE <- c(3, 3 / SP$nWorkers)
-
-  # TODO: what is a reasonable environmental correlation between queen and worker effects?
-  #corE <- matrix(data = c(1.0, 0.3,
-                          #0.3, 1.0), nrow = 2, byrow = T)
   
-  #SP$setVarE(varE = varE, corE = corE)
-
+  # Add traits - taken from the QuantGen vignette 
+  mean <- c(0, 0)
+  varA <- c(0.25, 0.1)
+  corA <- matrix(data = c( 1.0, 0,
+                           0,  1.0), nrow = 2, byrow = TRUE)
+  SP$addTraitA(nQtlPerChr = 100, mean = mean, var = varA, corA = corA,
+               name = c("QueenHoneyYield", "QueenFitness"))
+  
+  varE <- c(0.75, 0.9 / SP$nWorkers)
+  
+  # TODO: what is a reasonable environmental correlation between queen and worker effects?
+  corE <- matrix(data = c(1.0, 0,
+                          0, 1.0), nrow = 2, byrow = TRUE)
+  SP$setVarE(varE = varE, corE = corE)
   
   # STEP 3: Set up your base population
   # Create a base population for A. m. mellifera, A. m. mellifera cross, and A. m. carnica (400 of each)
@@ -211,32 +209,38 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar,nLig),1,segSites = 100)
                  Car = SIMplyBee::cross(x = virginQueens$Car[1:CarSize], drones = fathersCar),
                  Lig = SIMplyBee::cross(x = virginQueens$Lig[1:LigSize], drones = fathersLig))
 
-  #skip this
+  
   #Set allele frequency for queens
-  #tmp <- c(virginQueens$Mel, virginQueens$Car)
-  #alleleFreqBaseQueens <- calcBeeAlleleFreq(x = getSegSiteGeno(tmp),
-  #                                      sex = tmp@sex)
+  tmp <- c(virginQueens$Mel, virginQueens$Car, virginQueens$Lig)
+  alleleFreqBaseQueens <- calcBeeAlleleFreq(x = getSegSiteGeno(tmp),
+                                        sex = tmp@sex)
 
-  #alleleFreqBaseQueensCar <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Car),
-  #                                 sex = virginQueens$Car@sex)
- 
-  #alleleFreqBaseQueensMel <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Mel),
-  #                                           sex = virginQueens$Mel@sex)
+  alleleFreqBaseQueensCar <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Car),
+                                   sex = virginQueens$Car@sex)
+  
+  alleleFreqBaseQueensLig <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Lig),
+                                   sex = virginQueens$Lig@sex)
+  
+  alleleFreqBaseQueensMel <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Mel),
+                                             sex = virginQueens$Mel@sex)
+  
   #Get allele freq for csd locus
-  #csdLocus <- paste0(SP$csdChr, "_", SP$csdPosStart:SP$csdPosStop)
-  #alleleFreqCsdLocusBaseQueens <- alleleFreqBaseQueens[csdLocus]
-  #alleleFreqCsdLocusBaseCar <- alleleFreqBaseQueensCar[csdLocus]
-  #alleleFreqCsdLocusBaseMel <- alleleFreqBaseQueensMel[csdLocus]
+  csdLocus <- paste0(SP$csdChr, "_", SP$csdPosStart:SP$csdPosStop)
+  alleleFreqCsdLocusBaseQueens <- alleleFreqBaseQueens[csdLocus]
+  alleleFreqCsdLocusBaseCar <- alleleFreqBaseQueensCar[csdLocus]
+  alleleFreqCsdLocusBaseLig <- alleleFreqBaseQueensLig[csdLocus]
+  alleleFreqCsdLocusBaseMel <- alleleFreqBaseQueensMel[csdLocus]
 
   #Get allele freq for csd Chromosome - this pulls out only the 3rd chromosome
-  #alleleFreqCsdChrBaseQueens <- t(as.data.frame(alleleFreqBaseQueens))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueens))))] %>% t()
-  #alleleFreqCsdChrBaseCar <- t(as.data.frame(alleleFreqBaseQueensCar))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensCar))))] %>% t()
-  #alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
+  alleleFreqCsdChrBaseQueens <- t(as.data.frame(alleleFreqBaseQueens))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueens))))] %>% t()
+  alleleFreqCsdChrBaseCar <- t(as.data.frame(alleleFreqBaseQueensCar))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensCar))))] %>% t()
+  alleleFreqCsdChrBaseLig <- t(as.data.frame(alleleFreqBaseQueensLig))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensLig))))] %>% t()
+  alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
 
 year=1
-#year= year+1
+
   # Start the year-loop ------------------------------------------------------------------
- # for (year in 1:nYear) {
+  for (year in 1:nYear) {
     print("Starting the cycle")
     #year <- 1 (Use this to check that things are working without setting the whole for loop off )
     #year <- year + 1
@@ -249,9 +253,9 @@ year=1
                    Car = createMultiColony(x = queens$Car, n = CarSize),
                    Lig = createMultiColony(x = queens$Lig, n = LigSize))
       print("Record initial colonies")
-      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
-      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
-      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Lig, year = year, population = "Lig")
+      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
+      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
+      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Lig, year = year, population = "Lig")
 
       # If not, promote the age0 to age1, age1 to age2 and remove age2 colonies
     } else {
@@ -309,9 +313,8 @@ year=1
                         Car = sample.int(n = nColonies(age1$Car), size = 1),
                         Lig = sample.int(n = nColonies(age1$Lig), size = 1))
     # Virgin queens for splits!
-    #Aqui hago el pull de las age0 y entonces al crear las virgin queens creo
-    #el numero de virgin queens de melifera que no se van a cruzar con importadas
-    #el número de virgin queens de carnica más otras más que son = numero de mel cruce con importadas
+    #pull the number of mellifera splits that will be requened with carnica and ligustica queens
+
     tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport))
     IdImportColonies<-getId(tmp$pulled)
     
@@ -324,6 +327,7 @@ year=1
                         Lig = createVirginQueens(age1$Lig[[virginDonor$Lig]], nInd = nColonies(age0p1$Lig)+(nColonies(age0p1$MelImport)/2)))
 
     # Requeen the splits --> queens are now 0 years old
+    #
     
     nColoniesMelImport<-nColonies(age0p1$MelImport)
     nColoniesCar<-nColonies(age0p1$Car)+(nColonies(age0p1$MelImport)/2)
@@ -588,8 +592,8 @@ year=1
     age0 <- list(Mel = c(age0p1$Mel, age0p2$Mel),
                  Car = c(age0p1$Car, age0p2$Car),
                  Lig = c(age0p1$Lig, age0p2$Lig))
-    #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
-    #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
+    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
+    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
 
     # Period3 ------------------------------------------------------------------
     # Collapse age0 queens
@@ -633,6 +637,7 @@ year=1
 print("Saving image data")
 save.image("SpringerSimulation_import.RData")
 
+colonyRecords
 
 
 
