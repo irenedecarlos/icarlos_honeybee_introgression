@@ -1,5 +1,6 @@
 #setwd("~/Desktop/GitHub/lstrachan_honeybee_sim/YearCycleSimulation")
 # Clean workspace
+
 rm(list = ls())
 getwd()
 
@@ -118,6 +119,7 @@ loopTime <- data.frame(Rep = NA, tic = NA, toc = NA, msg = NA, time = NA)
 # Prepare recording function
 data_rec <- function(datafile, colonies, year, population) {
   queens = mergePops(getQueen(colonies))
+  IBDh = apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
   datafile = rbind(datafile,
                    data.frame(colonies             = deparse(substitute(colonies)),
                               population           = population,
@@ -131,7 +133,9 @@ data_rec <- function(datafile, colonies, year, population) {
                               nCsdApiary           = rep(nCsdAlleles(colonies, collapse = TRUE), queens@nInd),
                               pHomBrood            = calcQueensPHomBrood(queens),
                               gvQueens_QueenHoneyYield  = sapply(getGv(colonies, caste = "queen"), function(x) x[1,1]),
-                              gvQueens_QueenFitness = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2])
+                              gvQueens_QueenFitness = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2]),
+                              IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
+                              
                    ))}
 colonyRecords = NULL
 
@@ -160,8 +164,7 @@ colonyRecords = NULL
   # load("~/Desktop/GitHub/lstrachan_honeybee_sim/YearCycleSimulation/PlottingData/FounderGenomes_ThreePop_16chr.RData")
 
 # quick haplo to get the founder genomes for now.
-founderGenomes<- quickHaplo(sum(nMelN,nCar#,nLig
-                                ),4,segSites = 1000)
+founderGenomes<- quickHaplo(sum(nMelN,nCar),4,segSites = 1000)
   
   # STEP 2: Create SP object and write in the global simulation/population parameters
   SP <- SimParamBee$new(founderGenomes, csdChr = ifelse(nChr >= 3, 3, 1), nCsdAlleles = 128)
@@ -173,6 +176,7 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar#,nLig
   SP$splitP <- 0.3
   SP$setTrackPed(TRUE)            # Track the pedigree
   SP$setTrackRec(TRUE)            # Track the recombination
+  
   SP$addSnpChip(nSnpPerChr = 10)   # Add a SNP chip with 3 SNPs per chromosome
   csdChr <- SP$csdChr             # define csd chromomsome
   
@@ -194,9 +198,11 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar#,nLig
   # STEP 3: Set up your base population
   # Create a base population for A. m. mellifera, A. m. mellifera cross, and A. m. carnica (400 of each)
   virginQueens <- list(Mel = createVirginQueens(x = founderGenomes[1:(nMelN)]),
-                       Car = createVirginQueens(x = founderGenomes[(nMelN+1):(nMelN + nCar)])
+                       Car = createVirginQueens(x = founderGenomes[(nMelN+1):(nMelN + nCar)]))
+ getIbdHaplo(virginQueens$Car)[8,]
+ 
                        #,Lig = createVirginQueens(x = founderGenomes[(nMelN+nCar+1):(nMelN+nCar+nLig)])
-                       )
+                       
   # Create drones for A. m. mellifera, A. m. mellifera cross, and A. m. carnica
   drones <- list(Mel = createDrones(x = virginQueens$Mel[(IrelandSize+1):(nMelN)], nInd = nDronesPerQueen),
                  Car = createDrones(x = virginQueens$Car[(CarSize+1):nCar], nInd = nDronesPerQueen))
@@ -209,7 +215,10 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar#,nLig
   queens <- list(Mel = SIMplyBee::cross(x = virginQueens$Mel[1:IrelandSize], drones = fathersMel),
                  Car = SIMplyBee::cross(x = virginQueens$Car[1:CarSize], drones = fathersCar))
                  #,Lig = SIMplyBee::cross(x = virginQueens$Lig[1:LigSize], drones = fathersLig)
-
+  
+  #QueenHaploCodes<-unique(getIbdHaplo(queens$Mel))
+  #hapl<-as.data.frame.array(QueenHaploCodes,row.names=NULL)
+  #HaploCodes<-hapl[,1]
   
   #Set allele frequency for queens
   tmp <- c(virginQueens$Mel, virginQueens$Car) #, virginQueens$Lig
@@ -239,10 +248,10 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar#,nLig
   #alleleFreqCsdChrBaseLig <- t(as.data.frame(alleleFreqBaseQueensLig))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensLig))))] %>% t()
   alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
 
-year=1
+year=2
 
   # Start the year-loop ------------------------------------------------------------------
-  for (year in 1:nYear) {
+  #for (year in 1:nYear) {
     print("Starting the cycle")
     #year <- 1 (Use this to check that things are working without setting the whole for loop off )
     #year <- year + 1
@@ -267,7 +276,7 @@ year=1
       age0p1 <- list(Mel = NULL, Car = NULL) #, Lig = NULL
       age0p2 <- list(Mel = NULL, Car = NULL) #, Lig = NULL
     }
-
+   
     # Period1 ------------------------------------------------------------------
     # Build-up the colonies
     print(paste0("Building up the colonies to ", nWorkers, " and ", nDrones))
@@ -290,7 +299,8 @@ year=1
     age1 <- list(Mel = tmp$Mel$remnant,
                  Car = tmp$Car$remnant)
                  #,Lig = tmp$Lig$remnant)
-    # The queens of the splits are 0 years old
+   
+     # The queens of the splits are 0 years old
     age0p1 <- list(Mel = tmp$Mel$split, Car = tmp$Car$split) #,Lig = tmp$Lig$split
 
     if (year > 1) {
@@ -307,6 +317,7 @@ year=1
                      #,Lig = c(age0p1$Lig, tmp$Lig$split))
     }
 
+   
     # Create virgin queens
     # Sample colony for the virgin queens
     print("Create virgin queens, period 1")
@@ -315,11 +326,10 @@ year=1
                         Car = sample.int(n = nColonies(age1$Car), size = 1))
                         #Lig = sample.int(n = nColonies(age1$Lig), size = 1))
     # Virgin queens for splits!
-    #pull the number of mellifera splits that will be requened with carnica and ligustica queens
+   
 
     tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport))
     IdImportColonies<-getId(tmp$pulled)
-    
     age0p1 <- list(Mel = tmp$remnant,
                    MelImport = tmp$pulled,
                    Car = c(age0p1$Car, tmp$Car$split))
@@ -327,7 +337,12 @@ year=1
     virginQueens <- list(Mel = createVirginQueens(age1$Mel[[virginDonor$Mel]], nInd = nColonies(age0p1$Mel)),
                          Car = createVirginQueens(age1$Car[[virginDonor$Car]], nInd = nColonies(age0p1$Car)+nColonies(age0p1$MelImport)))
                         #,Lig = createVirginQueens(age1$Lig[[virginDonor$Lig]], nInd = nColonies(age0p1$Lig)+(nColonies(age0p1$MelImport)/2)))
-
+   
+    #haploCodeMel0=getIbdHaplo(virginQueens$Mel)
+    #hapl<-as.data.frame.array(haploCodeMel0,row.names=NULL)
+    #haploCodeMel0<-unique(hapl[,1])
+    #HaploCodes<-unique(c(HaploCodes,haploCodeMel0))
+    #HaploCodes
     # Requeen the splits --> queens are now 0 years old
     #
     
@@ -339,7 +354,7 @@ year=1
                    Car = reQueen(age0p1$Car, queen = virginQueens$Car[(nColoniesMelImport+1):nColoniesCar]))
                   #,Lig = reQueen(age0p1$Lig, queen = virginQueens$Lig[((nColoniesMelImport/2)+1):nColoniesLig]))
     
-   
+    
     # Swarm a percentage of age1 colonies
     print("Swarm colonies, P1")
     print(Sys.time())
@@ -358,8 +373,8 @@ year=1
     age1 <- list(Mel = c(age1$Mel, tmp$Mel$swarm),
                  Car = c(age1$Car, tmp$Car$swarm))
                  #,Lig = c(age1$Lig, tmp$Lig$swarm))
-
-
+    
+    
     if (year > 1) {
       # Swarm a percentage of age2 colonies
       tmp <- list(Mel = pullColonies(age2$Mel, p = p1swarm),
@@ -394,8 +409,7 @@ year=1
     age0p1 <- list(Mel = c(age0p1$Mel, tmp$Mel),
                    Car = c(age0p1$Car, tmp$Car))
                   #, Lig = c(age0p1$Lig, tmp$Lig))
-
-
+    
     if (year > 1) {
       # Supersede age2 colonies
       tmp <- list(Mel = pullColonies(age2$Mel, p = p1supersede),
@@ -442,7 +456,7 @@ year=1
                    Car = selectColonies(age2$Car, p = 1 - p1collapse))
                    #,Lig = selectColonies(age2$Lig, p = 1 - p1collapse))
     }
-
+    
     # Period2 ------------------------------------------------------------------
     print("PERIOD 2")
     # Swarm a percentage of age1 colonies
@@ -578,7 +592,7 @@ year=1
                  #,Lig = c(age0p1$Lig, age0p2$Lig))
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
-    # colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Lig")
+    #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Lig, year = year, population = "Lig")
     # Period3 ------------------------------------------------------------------
     # Collapse age0 queens
     print("PERIOD 3")
@@ -621,10 +635,13 @@ year=1
 print("Saving image data")
 save.image("SpringerSimulation_import.RData")
 
-x<-getIbdHaplo(age1$Mel, caste="queen")
-y<-getIbdHaplo(age0$Mel, caste="queen")
-length(y)
-length(x)
-
-
-
+queens = mergePops(getQueen(age0$Mel))
+IBDh<-apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
+IBD<-sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
+IBD
+getIbdHaplo(queens)
+mean(IBD)
+var(IBD)
+# I think it is okey if we put 1:(nMelN)*2 because all queens of mellifera will 
+#have an haplotype from 1 to twice the founder genomes o Mel (nMelN*2)
+colonyRecords[800:900,]
