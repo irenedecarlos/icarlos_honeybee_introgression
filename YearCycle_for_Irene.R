@@ -78,7 +78,7 @@ getwd()
 
 # Founder population parameters -------------------------------------------------------------------
 nMelN = 450                   # Number of Mellifera
-nCar = 150                    # Number of Carnica
+nCar = 450                    # Number of Carnica
 #nLig = 150
 nChr = 1                     # Number of chromomsome
 nDronesPerQueen = 50
@@ -88,7 +88,7 @@ nSegSites = 100              # Number of segregating sites
 nRep <- 1                     # Number of repeats
 nYear <- 10                   # Number of years
 IrelandSize<-300              #Ireland population size
-CarSize<-100                  #Carnica pop size
+CarSize<-300                  #Carnica pop size
 #LigSize<-100                  #Ligustica pop size
 nWorkers <- 10                # Number of workers in a full colony
 nDrones <- 50                 # Number of drones in a full colony (typically nWorkers * 0.2 (not in the example))
@@ -135,6 +135,7 @@ data_rec <- function(datafile, colonies, year, population) {
                               gvQueens_QueenHoneyYield  = sapply(getGv(colonies, caste = "queen"), function(x) x[1,1]),
                               gvQueens_QueenFitness = sapply(getGv(colonies, caste = "queen"), function(x) x[1,2]),
                               IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
+                              
                               
                    ))}
 colonyRecords = NULL
@@ -199,7 +200,7 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar),4,segSites = 1000)
   # Create a base population for A. m. mellifera, A. m. mellifera cross, and A. m. carnica (400 of each)
   virginQueens <- list(Mel = createVirginQueens(x = founderGenomes[1:(nMelN)]),
                        Car = createVirginQueens(x = founderGenomes[(nMelN+1):(nMelN + nCar)]))
- getIbdHaplo(virginQueens$Car)[8,]
+ 
  
                        #,Lig = createVirginQueens(x = founderGenomes[(nMelN+nCar+1):(nMelN+nCar+nLig)])
                        
@@ -249,9 +250,8 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar),4,segSites = 1000)
   alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
 
 year=2
-
   # Start the year-loop ------------------------------------------------------------------
-  #for (year in 1:nYear) {
+ # for (year in 1:nYear) {
     print("Starting the cycle")
     #year <- 1 (Use this to check that things are working without setting the whole for loop off )
     #year <- year + 1
@@ -264,8 +264,8 @@ year=2
                    Car = createMultiColony(x = queens$Car, n = CarSize))
                    #Lig = createMultiColony(x = queens$Lig, n = LigSize))
       print("Record initial colonies")
-      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
-      colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
+      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
+      #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
       #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Lig, year = year, population = "Lig")
 
       # If not, promote the age0 to age1, age1 to age2 and remove age2 colonies
@@ -590,8 +590,7 @@ year=2
     age0 <- list(Mel = c(age0p1$Mel, age0p2$Mel),
                  Car = c(age0p1$Car, age0p2$Car))
                  #,Lig = c(age0p1$Lig, age0p2$Lig))
-    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
-    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
+
     #colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Lig, year = year, population = "Lig")
     # Period3 ------------------------------------------------------------------
     # Collapse age0 queens
@@ -623,8 +622,25 @@ year=2
        } 
       else 
         {stop(paste0("The number of colonies for ", subspecies, " does not match the population size!"))}
-     }
-
+    }
+    #track mean IBD and variance of IBD
+    if (year==1){
+    columnheaders<-c("MeanIBD","VarIBD","Year","Population")
+    MeanVar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0))
+    colnames(MeanVar)<-columnheaders
+      uno<-1
+    } else{
+      uno<-nrow(colonyRecords) 
+    }
+    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
+    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
+    dos<-nrow(colonyRecords)
+    newrow1<- data.frame(MeanIBD=mean(colonyRecords[(uno+1):dos,14]), VarIBD=var(colonyRecords[(uno+1):dos,14]), Year=year,Population="Mel")
+    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
+    colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
+    tres<-nrow(colonyRecords)
+    newrow2<- data.frame(MeanIBD=mean(colonyRecords[(dos+1):tres,14]), VarIBD=var(colonyRecords[(dos+1):tres,14]), Year=year, Population="Car")
+    MeanVar<-rbind(MeanVar,newrow1,newrow2)
   } # Year-loop
 
   a <- toc()
@@ -635,13 +651,26 @@ year=2
 print("Saving image data")
 save.image("SpringerSimulation_import.RData")
 
-queens = mergePops(getQueen(age0$Mel))
+
+
+
+
+
+
+
+
+
+
+queens = mergePops(getQueen(age1$Mel))
 IBDh<-apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
 IBD<-sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
+length(IBD)
 IBD
 getIbdHaplo(queens)
 mean(IBD)
 var(IBD)
 # I think it is okey if we put 1:(nMelN)*2 because all queens of mellifera will 
 #have an haplotype from 1 to twice the founder genomes o Mel (nMelN*2)
-colonyRecords[800:900,]
+colonyRecords[500:600,]
+colonyRecords[700:1050,]
+colonyRecords
