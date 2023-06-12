@@ -249,9 +249,9 @@ founderGenomes<- quickHaplo(sum(nMelN,nCar),4,segSites = 1000)
   #alleleFreqCsdChrBaseLig <- t(as.data.frame(alleleFreqBaseQueensLig))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensLig))))] %>% t()
   alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
 
-year=2
+year=1
   # Start the year-loop ------------------------------------------------------------------
- # for (year in 1:nYear) {
+ for (year in 1:nYear) {
     print("Starting the cycle")
     #year <- 1 (Use this to check that things are working without setting the whole for loop off )
     #year <- year + 1
@@ -625,9 +625,11 @@ year=2
     }
     #track mean IBD and variance of IBD
     if (year==1){
-    columnheaders<-c("MeanIBD","VarIBD","Year","Population")
-    MeanVar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0))
-    colnames(MeanVar)<-columnheaders
+    columnheaders<-c("MeanIBD","VarIBD","Year","Population","HoneyYield","Fitness","Homocigosity")
+    MeanVarMel <- data.frame(matrix(ncol = length(columnheaders), nrow = 0))
+    colnames(MeanVarMel)<-columnheaders
+    MeanVarCar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0))
+    colnames(MeanVarCar)<-columnheaders
       uno<-1
     } else{
       uno<-nrow(colonyRecords) 
@@ -635,14 +637,27 @@ year=2
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel")
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel")
     dos<-nrow(colonyRecords)
-    newrow1<- data.frame(MeanIBD=mean(colonyRecords[(uno+1):dos,14]), VarIBD=var(colonyRecords[(uno+1):dos,14]), Year=year,Population="Mel")
+    newrow1<- data.frame(MeanIBD=mean(colonyRecords[(uno+1):dos,14]), VarIBD=var(colonyRecords[(uno+1):dos,14]), Year=year,Population="Mel"
+                         , HoneyYield=mean(colonyRecords[(uno+1):dos,12]), Fitness=mean(colonyRecords[(uno+1):dos,13]),Homocigosity=mean(colonyRecords[(uno+1):dos,11]))
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car")
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car")
     tres<-nrow(colonyRecords)
-    newrow2<- data.frame(MeanIBD=mean(colonyRecords[(dos+1):tres,14]), VarIBD=var(colonyRecords[(dos+1):tres,14]), Year=year, Population="Car")
-    MeanVar<-rbind(MeanVar,newrow1,newrow2)
+    newrow2<- data.frame(MeanIBD=mean(colonyRecords[(dos+1):tres,14]), VarIBD=var(colonyRecords[(dos+1):tres,14]), Year=year, Population="Car"
+                         , HoneyYield=mean(colonyRecords[(dos+1):tres,12]), Fitness=mean(colonyRecords[(dos+1):tres,13]),Homocigosity=mean(colonyRecords[(dos+1):tres,11]))
+    MeanVarMel<-rbind(MeanVarMel,newrow1)
+    MeanVarCar<-rbind(MeanVarCar,newrow2)
+    if (year==10){
+     hist(colonyRecords[uno:dos,13], main= "Mellifera Honey Yield", xlab="GV Honey Yield", breaks = 20)
+      hist(colonyRecords[uno:dos,12], main= "Mellifera Fitness", xlab="GV Fitness", breaks = 20)
+     hist(colonyRecords[dos+1:tres,13], main= "Carnica Honey Yield", xlab="GV Honey Yield", breaks = 20)
+      hist(colonyRecords[dos+1:tres,12], main= "Carnica Fitness", xlab="GV Fitness", breaks = 20)
+     hist(colonyRecords[uno:dos,11], main= "Homocigosity", xlab="Homocigous CSD", breaks = 20)
+     hist(colonyRecords[dos+1:tres,11], main= "Homocigosity", xlab="Homocigous CSD", breaks = 20)
+     MeanVar
+    }
   } # Year-loop
-
+help(hist)
+colonyRecords
   a <- toc()
   loopTime <- rbind(loopTime, c(Rep, a$tic, a$toc, a$msg, (a$toc - a$tic)))
 
@@ -651,26 +666,31 @@ year=2
 print("Saving image data")
 save.image("SpringerSimulation_import.RData")
 
+df <- bind_rows(
+  MeanVarMel %>% mutate(Population = "Mel"),
+  MeanVarCar %>% mutate(Population="Car"))
+df
+ggplot(df, aes(x=Year, y=MeanIBD, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+        scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+
+ggplot(df, aes(x=Year, y=Fitness, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+ggplot(df, aes(x=Year, y=HoneyYield, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+ggplot(df, aes(x=Year, y=Homocigosity, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
 
 
 
-
-
-
-
-
-
-
-queens = mergePops(getQueen(age1$Mel))
-IBDh<-apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
-IBD<-sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
-length(IBD)
-IBD
-getIbdHaplo(queens)
-mean(IBD)
-var(IBD)
-# I think it is okey if we put 1:(nMelN)*2 because all queens of mellifera will 
-#have an haplotype from 1 to twice the founder genomes o Mel (nMelN*2)
-colonyRecords[500:600,]
-colonyRecords[700:1050,]
-colonyRecords
