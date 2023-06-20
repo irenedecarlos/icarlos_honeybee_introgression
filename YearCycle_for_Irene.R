@@ -5,39 +5,6 @@ rm(list = ls())
 getwd()
 
 # Define functions
-maintainIrelandSize <- function(age0 = NULL, age1 = NULL) {
-  if ((nColonies(age0) + nColonies(age1)) > IrelandSize) { # check if the sum of all colonies is greater than population size
-    IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
-    splits0 <- pullColonies(age0, ID = IDsplits) # pull the splits out of age 0
-    age0split <- splits0$pulled # create an object for age 0 splits
-    age0swarm <- splits0$remnant # create an object for swarms and superseded colonies
-    splitsI<-pullColonies(age0split, ID=IdImportColonies) #pull the imports out of split
-    age0splitImport <- splitsI$pulled # create an object for imported splits
-    age0splitMel <- splitsI$remnant # create an object for non imported splits
-    age0needed <- IrelandSize - nColonies(age1) # calculate the number of age 0 colonies that are needed to fill up the apiary
-    if (age0needed <= nColonies(age0swarm)) { # check if the number of age 0 colonies needed is lower or equal to age 0 swarms
-      swarmID <- sample(getId(age0swarm), age0needed) # if yes, select the ids of swarms that will stay in apiary
-      swarmTMP <- pullColonies(age0swarm, ID = swarmID) # pull out those selected age0 swarms
-      age0 <- swarmTMP$pulled # put selected swarms to age 0 object
-    } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is greater than number of importedsplits select splits
-      nSplitNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
-      if (nSplitNeeded>nColonies(age0splitImport)){ #check if the number of importedsplits needed is greater than the number of importedsplits we have
-        age0<- c(age0swarm,age0splitImport) #add all the imported splits to age 0 object
-        nSplitMelNeeded <- age0needed - nColonies(age0) # calculate the number of not imported splits needed
-        splitMelId <- sample(getId(age0splitMel), nSplitMelNeeded) # select ids of not imported split 
-        splitMelTmp <- pullColonies(age0splitMel, ID = splitMelId) # pull the splits
-        splitsMel<- splitMelTmp$pulled # select pulled splits
-        age0<-c(age0,splitsMel) #add them to age0 object
-      } else {  #if the imported splits needed are lower than the imported splits we have
-        splitImportId <- sample(getId(age0splitImport), nSplitNeeded) # select ids of split import
-        ImportTmp <- pullColonies(age0splitImport, ID = splitImportId) # pull the split import
-        splitImports<- ImportTmp$pulled # select pulled split import
-        age0 <- c(age0swarms, splitImports) # combine imported splits and swarms in age 0 object
-      }
-    }
-    return(age0)
-  }
-}
 maintainCarSize <- function(age0 = NULL, age1 = NULL) {
   if ((nColonies(age0) + nColonies(age1)) > CarSize) { # check if the sum of all colonies is greater than apiary size
     IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
@@ -62,6 +29,43 @@ maintainCarSize <- function(age0 = NULL, age1 = NULL) {
 }
 
 
+maintainIrelandSize <- function(age0 = NULL, age1 = NULL) {
+  if ((nColonies(age0) + nColonies(age1)) > IrelandSize) { # check if the sum of all colonies is greater than apiary size
+    IDsplits <- getId(age0)[hasSplit(age0)] # get the IDs of age 0 that are splits
+    splits0 <- pullColonies(age0, ID = IDsplits) # pull the splits out of age 0
+    age0split <- splits0$pulled # create an object for age 0 splits
+    age0swarm <- splits0$remnant # create an object for swarms and superseded colonies
+    age0needed <- IrelandSize - nColonies(age1) # calculate the number of age 0 colonies that are needed to fill up the apiary
+    splitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
+    if (age0needed <= nColonies(age0swarm)) { # check if the number of age 0 colonies needed is lower or equal to age 0 swarms
+      swarmID <- sample(getId(age0swarm), age0needed) # if yes, select the ids of swarms that will stay in apiary
+      swarmTMP <- pullColonies(age0swarm, ID = swarmID) # pull out those selected age0 swarms
+      age0 <- swarmTMP$pulled # put selected swarms to age 0 object
+    } else if (age0needed > nColonies(age0swarm)) { # in case when age 0 needed is grater than number of swarm select splits
+      nSplitsNeeded <- age0needed - nColonies(age0swarm) # calculate the number of splits needed
+      queens <- mergePops(getQueen(age0split))#get the queens from the split
+      IBDh <- apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))#get IBD for each haplotype
+      IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)#IBd for every queen
+      MelHY<-sapply(getGv(age0split, caste = "queen"), function(x) x[1,1])# get the gvHoneyYield for mellifera
+      MelHY<-MelHY*IBD #Multiply the honey yield by the IBD
+      MelImpHY<-sapply(getGv(age0split, caste = "queen"), function(x) x[1,2])#get the honey yield for imported carnica
+      MelImpHY<-MelImpHY*(1-IBD)#Multiply the honey yield by the IBD of carnica
+      MelPopHY<-MelHY+MelImpHY #sum both so that I have the hybridised mellifera, and imported carnica HY 
+      queensID<-names(sort(MelPopHY,decreasing=T))#order the IDs of the queens with higher HY
+      age0MelqueensID<-queensID[1:nSplitsNeeded] # select ids of splits
+      splitTmp <- pullColonies(age0split, ID = age0MelqueensID) # pull the splits
+      splits <- splitTmp$pulled # select pulled splits
+      age0 <- c(age0swarm, splits) #Colonies that will be used to mantain size
+    }
+    return(age0)
+  }
+}
+
+
+
+SP$traits[[1]]@addEff
+
+
 # Load packages
 library(AlphaSimR)
 library(ggplot2)
@@ -72,6 +76,7 @@ library(Matrix)
 library(SIMplyBee)
 library(dplyr)
 library(ggpubr)
+
 #library(tidyr)
 # TODO: replace with devtools installation from Github once the package is operational
 # Source the development version of AlphaSimR
@@ -171,9 +176,10 @@ for (Rep in 1:nRep) {
   
   # quick haplo to get the founder genomes for now.
   founderGenomes<- quickHaplo(sum(nMelN,nCar),4,segSites = 1000)
-  nMelN<-800
+  nMelN<-300
+  
   # STEP 2: Create SP object and write in the global simulation/population parameters
-  SP <- SimParamBee$new(FounderGenomes, csdChr = ifelse(nChr >= 3, 3, 1), nCsdAlleles = 128)
+  SP <- SimParamBee$new(founderGenomes, csdChr = ifelse(nChr >= 3, 3, 1), nCsdAlleles = 128)
   SP$nWorkers <- nWorkers
   SP$nDrones <- nDrones
   SP$nFathers <- pFathers
@@ -257,7 +263,7 @@ for (Rep in 1:nRep) {
   #alleleFreqCsdChrBaseLig <- t(as.data.frame(alleleFreqBaseQueensLig))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensLig))))] %>% t()
   alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
   
-  year=1
+  
   # Start the year-loop ------------------------------------------------------------------
   for (year in 1:nYear) {
     print("Starting the cycle")
@@ -607,25 +613,50 @@ for (Rep in 1:nRep) {
     print(Sys.time())
     
     #selection on Fitness queen gv
-     #age0
-    gvMelQueensFitness <- sapply(getGv(age0$Mel, caste = "queen"), function(x) x[1,3])
-    queensID<-names(sort(gvMelQueensFitness,decreasing=T))
-    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
-    age0MelqueensID<-queensID[1:Nselectcolon]
+    
+    #age0
+    #Mellifera
+    queens <- mergePops(getQueen(age0$Mel)) #get the queens od age0 mellifera
+    IBDh <- apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
+    IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2) # get IBD for queens
+    MelFit<-sapply(getGv(age0$Mel, caste = "queen"), function(x) x[1,3])#get the gv fitnes for mellifera
+    MelFit<-MelFit*IBD #multiply by IBD 
+    MelImpFit<-sapply(getGv(age0$Mel, caste = "queen"), function(x) x[1,4])#get gv of fitnes for imported carnica
+    MelImpFit<-MelImpFit*(1-IBD)#Multiply the fitness by the IBD
+    MelPopFit<-MelFit+MelImpFit#sum both to get the Fitness for the whole mellifera population
+    queensID<-names(sort(MelPopFit,T))# order the queens with more fitness to less
+    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))# calculate how many colonies will collapse
+    age0MelqueensID<-queensID[1:Nselectcolon]# select the queens ids that will not collapse
+    
+    #Carnica
     gvCarQueensFitness <- sapply(getGv(age0$Car, caste = "queen"), function(x) x[1,4])
     queensID<-names(sort(gvCarQueensFitness,decreasing=T))
     Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
     age0CarqueensID<-queensID[1:Nselectcolon]
+    
     #age1
-    gvMelQueensFitness <- sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,3])
-    queensID<-names(sort(gvMelQueensFitness,decreasing=T))
+    #Mellifera
+    queens <- mergePops(getQueen(age1$Mel))
+    IBDh <- apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
+    IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
+    MelHY<-sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,3])
+    MelHY<-MelHY*IBD
+    MelImpHY<-sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,4])
+    MelImpHY<-MelImpHY*(1-IBD)
+    MelPopHY<-MelHY+MelImpHY
+    queensID<-names(sort(MelPopHY,T))
     Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
     age1MelqueensID<-queensID[1:Nselectcolon]
+     
+    
+    #Carnica
     gvCarQueensFitness <- sapply(getGv(age1$Car, caste = "queen"), function(x) x[1,4])
     queensID<-names(sort(gvCarQueensFitness,decreasing=T))
     Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
     age1CarqueensID<-queensID[1:Nselectcolon]
     
+    
+    #Collapse
     age0 <- list(Mel = selectColonies(age0$Mel, ID=age0MelqueensID),
                  Car = selectColonies(age0$Car, ID=age0CarqueensID))
     #,Lig = selectColonies(age0$Lig, p = (1 - p3collapseAge0)))
@@ -691,7 +722,6 @@ for (Rep in 1:nRep) {
     MeanVarCar<-rbind(MeanVarCar,newrow2)
     
   } # Year-loop
-  MeanVarMel
   colonyRecords
   a <- toc()
   loopTime <- rbind(loopTime, c(Rep, a$tic, a$toc, a$msg, (a$toc - a$tic)))
@@ -703,10 +733,10 @@ for (Rep in 1:nRep) {
 df <- bind_rows(
   MeanVarMel %>% mutate(Population = "Mel"),
   MeanVarCar %>% mutate(Population="Car"))
-
+df
 #plot of Mean IBD
 ggplot(df, aes(x=Year, y=MeanIBD, group=Population)) + 
-  geom_smooth(aes(colour=Population),se=F, data=subset(df,Rep==5))+
+  geom_smooth(aes(colour=Population),se=F, data=subset(df,Rep==4))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
