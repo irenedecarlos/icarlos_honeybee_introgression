@@ -149,7 +149,7 @@ data_rec <- function(datafile, colonies, year, population, Rep) {
                    ))}
 colonyRecords = NULL
 Rep=1
-nRep=5
+nRep=1
 # Start of the rep-loop ---------------------------------------------------------------------
 for (Rep in 1:nRep) {
   # Rep <- 1 (you can use this to check if your code is running alright for one whole loop)
@@ -263,7 +263,7 @@ for (Rep in 1:nRep) {
   #alleleFreqCsdChrBaseLig <- t(as.data.frame(alleleFreqBaseQueensLig))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensLig))))] %>% t()
   alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
   
-  
+  year=1
   # Start the year-loop ------------------------------------------------------------------
   for (year in 1:nYear) {
     print("Starting the cycle")
@@ -342,8 +342,8 @@ for (Rep in 1:nRep) {
     # Virgin queens for splits!
     
     
-    tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport))
-    IdImportColonies<-getId(tmp$pulled)
+    tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport)) #pull colonies to requeen with imports
+    IdImportColonies<-getId(tmp$pulled) #get the ids of the imported colonies
     age0p1 <- list(Mel = tmp$remnant,
                    MelImport = tmp$pulled,
                    Car = c(age0p1$Car, tmp$Car$split))
@@ -351,15 +351,8 @@ for (Rep in 1:nRep) {
     virginQueens <- list(Mel = createVirginQueens(age1$Mel[[virginDonor$Mel]], nInd = nColonies(age0p1$Mel)),
                          Car = createVirginQueens(age1$Car[[virginDonor$Car]], nInd = nColonies(age0p1$Car)+nColonies(age0p1$MelImport)))
     #,Lig = createVirginQueens(age1$Lig[[virginDonor$Lig]], nInd = nColonies(age0p1$Lig)+(nColonies(age0p1$MelImport)/2)))
-    
-    #haploCodeMel0=getIbdHaplo(virginQueens$Mel)
-    #hapl<-as.data.frame.array(haploCodeMel0,row.names=NULL)
-    #haploCodeMel0<-unique(hapl[,1])
-    #HaploCodes<-unique(c(HaploCodes,haploCodeMel0))
-    #HaploCodes
-    # Requeen the splits --> queens are now 0 years old
-    #
-    
+  
+    #requeen with carnica and mellifera for Mel and carnica for Car
     nColoniesMelImport<-nColonies(age0p1$MelImport)
     nColoniesCar<-nColonies(age0p1$Car)+nColonies(age0p1$MelImport)
     #nColoniesLig<-nColonies(age0p1$Lig)+(nColonies(age0p1$MelImport)/2)
@@ -616,47 +609,47 @@ for (Rep in 1:nRep) {
     
     #age0
     #Mellifera
-    queens <- mergePops(getQueen(age0$Mel)) #get the queens od age0 mellifera
+    queens <- mergePops(getQueen(age0$Mel)) #get the queens of age0 mellifera
     IBDh <- apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
-    IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2) # get IBD for queens
+    IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2) #get IBD for queens
     MelFit<-sapply(getGv(age0$Mel, caste = "queen"), function(x) x[1,3])#get the gv fitnes for mellifera
     MelFit<-MelFit*IBD #multiply by IBD 
     MelImpFit<-sapply(getGv(age0$Mel, caste = "queen"), function(x) x[1,4])#get gv of fitnes for imported carnica
-    MelImpFit<-MelImpFit*(1-IBD)#Multiply the fitness by the IBD
-    MelPopFit<-MelFit+MelImpFit#sum both to get the Fitness for the whole mellifera population
-    queensID<-names(sort(MelPopFit,T))# order the queens with more fitness to less
-    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))# calculate how many colonies will collapse
-    age0MelqueensID<-queensID[1:Nselectcolon]# select the queens ids that will not collapse
+    MelImpFit<-MelImpFit*(1-IBD) #Multiply the fitness by the IBD
+    MelPopFit<-MelFit+MelImpFit #sum both to get the Fitness for the whole mellifera population
+    queensID<-names(sort(MelPopFit,T)) #order and get IDs of the queens from more fitness to less
+    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0)) #calculate how many colonies will collapse
+    age0MelqueensID<-queensID[1:Nselectcolon] #select the queens ids that will not collapse
     
     #Carnica
-    gvCarQueensFitness <- sapply(getGv(age0$Car, caste = "queen"), function(x) x[1,4])
-    queensID<-names(sort(gvCarQueensFitness,decreasing=T))
-    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
-    age0CarqueensID<-queensID[1:Nselectcolon]
+    gvCarQueensFitness <- sapply(getGv(age0$Car, caste = "queen"), function(x) x[1,4]) #get gv for fitness of age 0 carnica queens
+    queensID<-names(sort(gvCarQueensFitness,decreasing=T)) #order and get IDs of the queens from more fitness to less
+    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0)) #calculate how many colonies will collapse
+    age0CarqueensID<-queensID[1:Nselectcolon] #select the queens ids that will not collapse
     
     #age1
     #Mellifera
-    queens <- mergePops(getQueen(age1$Mel))
+    queens <- mergePops(getQueen(age1$Mel)) #get the queens of age1 mellifera
     IBDh <- apply(getIbdHaplo(queens),MARGIN = 1, FUN =  function(X) sum(X %in% 1:(nMelN*2)/length(X)))
-    IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2)
-    MelHY<-sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,3])
-    MelHY<-MelHY*IBD
-    MelImpHY<-sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,4])
-    MelImpHY<-MelImpHY*(1-IBD)
-    MelPopHY<-MelHY+MelImpHY
-    queensID<-names(sort(MelPopHY,T))
-    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
-    age1MelqueensID<-queensID[1:Nselectcolon]
+    IBD = sapply(seq(1,length(IBDh),2), FUN = function(z) sum(IBDh[z:(z+1)])/2) #get IBD for queens
+    MelHY<-sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,3]) #get the gv fitnes for mellifera
+    MelHY<-MelHY*IBD #multiply by IBD
+    MelImpHY<-sapply(getGv(age1$Mel, caste = "queen"), function(x) x[1,4])#get gv of fitnes for imported carnica
+    MelImpHY<-MelImpHY*(1-IBD)#Multiply the fitness by the IBD
+    MelPopHY<-MelHY+MelImpHY #sum both to get the Fitness for the whole mellifera population
+    queensID<-names(sort(MelPopHY,T)) #order and get IDs of the queens from more fitness to less
+    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0)) #calculate how many colonies will collapse
+    age1MelqueensID<-queensID[1:Nselectcolon] #select the queens ids that will not collapse
      
     
     #Carnica
-    gvCarQueensFitness <- sapply(getGv(age1$Car, caste = "queen"), function(x) x[1,4])
-    queensID<-names(sort(gvCarQueensFitness,decreasing=T))
-    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0))
-    age1CarqueensID<-queensID[1:Nselectcolon]
+    gvCarQueensFitness <- sapply(getGv(age1$Car, caste = "queen"), function(x) x[1,4]) #get gv for fitness of age 1 carnica queens
+    queensID<-names(sort(gvCarQueensFitness,decreasing=T)) #order and get IDs of the queens from more fitness to less
+    Nselectcolon<-round(length(queensID)*(1-p3collapseAge0)) #calculate how many colonies will collapse
+    age1CarqueensID<-queensID[1:Nselectcolon] #select the queens ids that will not collapse
     
     
-    #Collapse
+    #Collapse non selected colonies with low fitness will collapse
     age0 <- list(Mel = selectColonies(age0$Mel, ID=age0MelqueensID),
                  Car = selectColonies(age0$Car, ID=age0CarqueensID))
     #,Lig = selectColonies(age0$Lig, p = (1 - p3collapseAge0)))
@@ -682,41 +675,56 @@ for (Rep in 1:nRep) {
       else 
       {stop(paste0("The number of colonies for ", subspecies, " does not match the population size!"))}
     }
+    
     #track mean IBD and variance of IBD
-    if (year==1 & Rep==1){ #this creates two empty dataframes with the specified headers
+    
+    #this creates two empty dataframes where all the information of each year and each replica will be recorded
+    if (year==1 & Rep==1){ 
       columnheaders<-c("MeanIBD","VarIBD","Year","Rep","Population","HoneyYield","Fitness","Homocigosity")
-      MeanVarMel <- data.frame(matrix(ncol = length(columnheaders), nrow = 0))
+      MeanVarMel <- data.frame(matrix(ncol = length(columnheaders), nrow = 0)) #dataframe for mellifera
       colnames(MeanVarMel)<-columnheaders
-      MeanVarCar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0))
+      MeanVarCar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0)) #dataframe for carnica
       colnames(MeanVarCar)<-columnheaders
       uno<-1
     } else{
-      uno<-nrow(colonyRecords) 
+      uno<-nrow(colonyRecords) #this is to show where to start recording values on the dataframe
     }
-    Rep=1
+    
+    
+    #record values of Mellifera population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel", Rep=Rep)
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel", Rep=Rep)
-    dos<-nrow(colonyRecords)
-    #create a dataframe that calculates means and vars from colonyrecords for Mellifera
-    #this is to take the breeding value of carnica for the imports and of mellifera for non imports in the Mel pop
+    dos<-nrow(colonyRecords)#this is to show where to end recording values on the dataframe
+    
+    
+    #this is to take the breeding value of carnica for the imports and of hybrid mellifera for non imports in the Mel pop
+    #HoneyYield
     HoneyYieldFitness<-colonyRecords[uno+1:dos,]
-    ImportedHoneyYield<-HoneyYieldFitness$gvCarQueens_QueenHoneyYield[colonyRecords$IBD==0]
+    ImportedHoneyYield<-HoneyYieldFitness$gvCarQueens_QueenHoneyYield*(1-HoneyYieldFitness$IBD)
     ImportedHoneyYield<- ImportedHoneyYield[!is.na(ImportedHoneyYield)]
-    MelHoneyYield<-HoneyYieldFitness$gvMelQueens_QueenHoneyYield[colonyRecords$IBD!=0]
+    MelHoneyYield<-HoneyYieldFitness$gvMelQueens_QueenHoneyYield*(HoneyYieldFitness$IBD)
     MelHoneyYield<- MelHoneyYield[!is.na(MelHoneyYield)]
-    ImportedFitness<-HoneyYieldFitness$gvCarQueens_QueenFitness[colonyRecords$IBD==0]
+    HoneyYield<-MelHoneyYield+ImportedHoneyYield
+    #Fitness
+    ImportedFitness<-HoneyYieldFitness$gvCarQueens_QueenFitness*(1-HoneyYieldFitness$IBD)
     ImportedFitness<- ImportedFitness[!is.na(ImportedFitness)]
-    MelFitness<-HoneyYieldFitness$gvMelQueens_QueenFitness[colonyRecords$IBD!=0]
+    MelFitness<-HoneyYieldFitness$gvMelQueens_QueenFitness*(HoneyYieldFitness$IBD)
     MelFitness<- MelFitness[!is.na(MelFitness)]
+    Fitness<-MelFitness+ImportedFitness
   
+    #create a dataframe with the mellifera mean IBD, variance of IBD, mean Honey yield, mean fitness and mean homocigosity
     newrow1<- data.frame(MeanIBD=mean(colonyRecords[(uno+1):dos,"IBD"]), VarIBD=var(colonyRecords[(uno+1):dos,"IBD"]), Year=year,Rep=Rep,Population="Mel"
-                         , HoneyYield=(sum(ImportedHoneyYield)+sum(MelHoneyYield))/IrelandSize, Fitness=(sum(ImportedFitness)+sum(MelFitness))/IrelandSize,Homocigosity=mean(colonyRecords[(uno+1):dos,"pHomBrood"]))
+                         , HoneyYield=(sum(HoneyYield)/IrelandSize), Fitness=(sum(Fitness)/IrelandSize),Homocigosity=mean(colonyRecords[(uno+1):dos,"pHomBrood"]))
+   
+    #record values of Carnica population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car", Rep=Rep)
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Car, year = year, population = "Car", Rep=Rep)
     tres<-nrow(colonyRecords)
-    #create a dataframe that calculates means and vars from colonyrecords for Carnica
+    
+    #create a dataframe with the carnica mean IBD, variance of IBD, mean Honey yield, mean fitness and mean homocigosity
     newrow2<- data.frame(MeanIBD=mean(colonyRecords[(dos+1):tres,"IBD"]), VarIBD=var(colonyRecords[(dos+1):tres,"IBD"]), Year=year,Rep=Rep, Population="Car"
                          , HoneyYield=mean(colonyRecords[(dos+1):tres,"gvCarQueens_QueenHoneyYield"]), Fitness=mean(colonyRecords[(dos+1):tres,"gvCarQueens_QueenFitness"]),Homocigosity=mean(colonyRecords[(dos+1):tres,"pHomBrood"]))
+    
     #Combine what we had in each dataframe with the new info, so each year the dataframe updates with new values
     MeanVarMel<-rbind(MeanVarMel,newrow1)
     MeanVarCar<-rbind(MeanVarCar,newrow2)
@@ -728,45 +736,9 @@ for (Rep in 1:nRep) {
   
 } # Rep-loop
 
-#Plot the replicas
-
-df <- bind_rows(
-  MeanVarMel %>% mutate(Population = "Mel"),
-  MeanVarCar %>% mutate(Population="Car"))
-df
-#plot of Mean IBD
-ggplot(df, aes(x=Year, y=MeanIBD, group=Population)) + 
-  geom_smooth(aes(colour=Population),se=F, data=subset(df,Rep==4))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
-
-#plot Fitness for different reps
-ggplot(df, aes(x=Year, y=Fitness, group=Population)) + 
-  geom_smooth(aes(colour=Population),se=F, data=subset(df,Rep==5))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
-
-
-#plot Honey Yield
-ggplot(df, aes(x=Year, y=HoneyYield, group=Population)) + 
-  geom_smooth(aes(colour=Population),se=F, data=subset(df,Rep==5))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
-
-#Plot Homocigosity 
-ggplot(df, aes(x=Year, y=Homocigosity, group=Population)) + 
-  geom_smooth(aes(colour=Population),se=F, data=subset(df,Rep==5))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
-
-#esto lo puedes meter en el loop de rep y asi no tener que copiar un troncho tol rato
-#jeje
-
 #Dataframes with mean replicates
+
+#This calculates the mean and sd through different replicates of the mean IBD, mean Honey Yield, fitness and homocigosity
 groupedMel<-MeanVarMel %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                     sdIBD = sd(MeanIBD),
                                     meanHoneyYield = mean(HoneyYield),
@@ -774,11 +746,9 @@ groupedMel<-MeanVarMel %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                     meanFitness = mean(Fitness),
                                     sdFitness = sd(Fitness),
                                     meanHomocigosity = mean(Homocigosity),
-                                    sdHomocigosity = sd(Homocigosity)
+                                    sdHomocigosity = sd(Homocigosity),
+                                    Pop= "Mel"
                                   )
-Pop= c("Mel","Mel","Mel","Mel","Mel","Mel","Mel","Mel","Mel","Mel")
-Pop
-groupedMel$Pop<-Pop
 
 groupedCar<-MeanVarCar %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                         sdIBD = sd(MeanIBD),
@@ -788,29 +758,33 @@ groupedCar<-MeanVarCar %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                         sdFitness = sd(Fitness),
                                                         meanHomocigosity = mean(Homocigosity),
                                                         sdHomocigosity = sd(Homocigosity),
+                                                        Pop= "Car"
 )
-groupedCar
-Pop= c("Car","Car","Car","Car","Car","Car","Car","Car","Car","Car")
-Pop
-groupedCar$Pop<-Pop
 
-#Plot the mean replicas
+
+#Plot the mean of the replicas
+
+#plot for IBD
 grouped<-rbind(groupedMel,groupedCar)
+
 ggplot(data = grouped, aes(x = Year, y = meanIBD, group=Pop)) + geom_line(aes(colour=Pop)) +
   geom_ribbon(aes(ymin = meanIBD - sdIBD, ymax = meanIBD + sdIBD), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+#plot for Fitness
 ggplot(data = grouped, aes(x = Year, y = meanFitness, group=Pop)) + geom_line(aes(colour=Pop)) +
   geom_ribbon(aes(ymin = meanFitness - sdFitness, ymax = meanFitness + sdFitness), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+#plot for HoneyYield
 ggplot(data = grouped, aes(x = Year, y = meanHoneyYield, group=Pop)) + geom_line(aes(colour=Pop)) +
   geom_ribbon(aes(ymin = meanHoneyYield - sdHoneyYield, ymax = meanHoneyYield + sdHoneyYield), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) 
+#plot for Homocigosity
 ggplot(data = grouped, aes(x = Year, y = meanHomocigosity, group=Pop)) + geom_line(aes(colour=Pop)) +
   geom_ribbon(aes(ymin = meanHomocigosity - sdHomocigosity, ymax = meanHomocigosity + sdHomocigosity), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -819,7 +793,45 @@ ggplot(data = grouped, aes(x = Year, y = meanHomocigosity, group=Pop)) + geom_li
 
 print("Saving image data")
 save.image("SelectionScenario.RData")
-#
-#en vez e con IBD mejor hacer en colony records algo que diga si es importada o no
+
+
+
+
+
+#Plot of each of the replicas
+
+df <- bind_rows(
+  MeanVarMel %>% mutate(Population = "Mel"),
+  MeanVarCar %>% mutate(Population="Car"))
+df
+#plot of Mean IBD
+ggplot(df, aes(x=Year, y=MeanIBD, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+
+#plot Fitness for different reps
+ggplot(df, aes(x=Year, y=Fitness, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+
+
+#plot Honey Yield
+ggplot(df, aes(x=Year, y=HoneyYield, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+
+#Plot Homocigosity 
+ggplot(df, aes(x=Year, y=Homocigosity, group=Population)) + 
+  geom_smooth(aes(colour=Population),se=F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+
 
                 
