@@ -181,8 +181,8 @@ nRep=5
 # Start of the rep-loop ---------------------------------------------------------------------
 for (Rep in 1:nRep) {
  
-  dir.create(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,".RData"))
-  setwd(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,".RData"))
+  dir.create(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep))
+  setwd(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep))
   
   
   cat(paste0("Rep: ", Rep, "/", nRep, "\n"))
@@ -750,10 +750,10 @@ for (Rep in 1:nRep) {
   tic(paste0(nYear, 'y loop'))         # Measure cpu time
   Rprof()
  
-dir.create(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,".RData/ScenarioRep",Rep))
+dir.create(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,"/ScenarioRep",Rep))
 #selection scenario
-load(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,".RData/Burnin",Rep,".RData")) #load the burn in
-setwd(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,".RData/ScenarioRep",Rep))
+load(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,"/Burnin",Rep,".RData")) #load the burn in
+setwd(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,"/ScenarioRep",Rep))
 
 year=11
 nYear=20
@@ -1177,110 +1177,119 @@ for (year in 11:nYear) {
   #Combine what we had in each dataframe with the new info, so each year the dataframe updates with new values
   MeanVarMel<-rbind(MeanVarMel,newrow1)
   MeanVarCar<-rbind(MeanVarCar,newrow2)
-  tomate<- rbind(MeanVarMel,MeanVarCar)
  } #end of year loop
 save.image(paste0("Selection",Rep,".RData"))
-#path<-getwd()
+CombinedDf<-rbind(MeanVarCar,MeanVarMel)
+write.csv(CombinedDf, paste0("Rep",Rep,".csv"))
 remove(MeanVarCar)
 remove(MeanVarMel)
-getwd()
-#write.csv(patata, row.names=FALSE)
+
 }#end of rep loop
 
 
-Rep<-1
+Rep<-5
+
 setwd(paste0("C:/Users/Usuario/Honeybeeimports/Replica",Rep,".RData/ScenarioRep",Rep))
 load((paste0("Selection",Rep,".RData")))
-
-Rep5C<-MeanVarCar
-Rep5M<-MeanVarMel
-Rep4C<-MeanVarCar
-Rep4M<-MeanVarMel
-Rep3C<-MeanVarCar
-Rep3M<-MeanVarMel
-Rep2C<-MeanVarCar
-Rep2M<-MeanVarMel
-Rep1C<-MeanVarCar
 Rep1M<-MeanVarMel
+Rep1C<-MeanVarCar
+Rep2M<-MeanVarMel
+Rep2C<-MeanVarCar
+Rep3M<-MeanVarMel
+Rep3C<-MeanVarCar
+Rep4M<-MeanVarMel
+Rep4C<-MeanVarCar
+Rep5M<-MeanVarMel
+Rep5C<-MeanVarCar
+remove(MeanVarMel)
+remove(MeanVarCar)
 Melif<-rbind(Rep1M,Rep2M,Rep3M,Rep4M,Rep5M)
 Carnic<-rbind(Rep1C,Rep2C,Rep3C,Rep4C,Rep5C)
-
-
-
 #Dataframes with mean replicates
 
-#This calculates the mean and sd through different replicates of the mean IBD, mean Honey Yield, fitness and homocigosity
-groupedMel<-MeanMel %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
-                                    sdIBD = sd(MeanIBD),
-                                    meanHoneyYield = mean(HoneyYieldBrit),
-                                    sdHoneyYield = sd(HoneyYieldBrit),
-                                    meanFitness = mean(FitnessBrit),
-                                    sdFitness = sd(FitnessBrit),
-                                    meanHomocigosity = mean(Homocigosity),
-                                    sdHomocigosity = sd(Homocigosity),
-                                    Pop= "Mel"
-                                  )
+Mother<-read.csv("mother.csv")
 
+#This calculates the mean and sd through different replicates of the mean IBD, mean Honey Yield, fitness and homocigosity
+patata2<-patata %>% group_by(Population)
+Carni<-patata2[1:20,]
+Meli<-patata2[21:40,]
 groupedCar<-Carnic %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                         sdIBD = sd(MeanIBD),
+                                                    quanIBDl= quantile(meanIBD,p=0.025),
+                                                    quanIBDh= quantile(meanIBD,p=0.975),
                                                         meanHoneyYield = mean(HoneyYieldEu),
                                                         sdHoneyYield = sd(HoneyYieldEu),
+                                                    quanHYl= quantile(HoneyYieldEu,p=0.025),
+                                                    quanHYh= quantile(HoneyYieldEu,p=0.975),
                                                         meanFitness = mean(FitnessEu),
                                                         sdFitness = sd(FitnessEu),
+                                                    quanFl= quantile(FitnessEu,p=0.025),
+                                                    quanFh= quantile(FitnessEu,p=0.975),
                                                         meanHomocigosity = mean(Homocigosity),
                                                         sdHomocigosity = sd(Homocigosity),
+                                                    quanHol= quantile(Homocigosity,p=0.025),
+                                                    quanHoh= quantile(Homocigosity,p=0.975),
                                                         Pop= "Car"
 )
 
 groupedMel<-Melif  %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                      sdIBD = sd(MeanIBD),
+                                                    quanIBDl= quantile(meanIBD,p=0.025),
+                                                    quanIBDh= quantile(meanIBD,p=0.975),
                                                      meanHoneyYield = mean(HoneyYieldBrit),
                                                      sdHoneyYield = sd(HoneyYieldBrit),
+                                                    quanHYl= quantile(HoneyYieldBrit,p=0.025),
+                                                    quanHYh= quantile(HoneyYieldBrit,p=0.975),
                                                      meanFitness = mean(FitnessBrit),
                                                      sdFitness = sd(FitnessBrit),
+                                                    quanFl= quantile(FitnessBrit,p=0.025),
+                                                    quanFh= quantile(FitnessBrit,p=0.975),
                                                      meanHomocigosity = mean(Homocigosity),
                                                      sdHomocigosity = sd(Homocigosity),
+                                                    quanHol= quantile(Homocigosity,p=0.025),
+                                                    quanHoh= quantile(Homocigosity,p=0.975),
                                                      Pop= "Mel"
+                                                    
 )
-
-motherburninMel<-(rbind(motherburnin[1:10,],motherburnin[21:30,],motherburnin[41:50,],motherburnin[61:70,],motherburnin[81:90,]))
-motherburninCar<-(rbind(motherburnin[11:20,],motherburnin[31:40,],motherburnin[51:60,],motherburnin[71:80,],motherburnin[91:100,]))
-
-
 
 
 
 #Plot the mean of the replicas
-Melif
+
 #plot for IBD
 grouped<-rbind(groupedMel,groupedCar)
 
-ggplot(data = grouped, aes(x = Year, y = meanIBD, group=Pop)) + geom_line(aes(colour=Pop)) +
+a<-ggplot(data = grouped, aes(x = Year, group=Pop)) + geom_line(aes(y= meanIBD, colour=Pop)) +
   geom_ribbon(aes(ymin = meanIBD - sdIBD, ymax = meanIBD + sdIBD), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
 #plot for Fitness
-ggplot(data = grouped, aes(x = Year, y = meanFitness, group=Pop)) + geom_line(aes(colour=Pop)) +
-  geom_ribbon(aes(ymin = meanFitness - sdFitness, ymax = meanFitness + sdFitness), alpha = 0.2)+
+#(ymin = meanFitness - sdFitness, ymax = meanFitness + sdFitness)
+b<-ggplot(data = grouped, aes(x = Year, y = meanFitness, group=Pop)) + geom_line(aes(colour=Pop)) +
+  geom_ribbon(aes(ymin = quanFl, ymax = quanFh), alpha = 0.2) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
 #plot for HoneyYield
-ggplot(data = grouped, aes(x = Year, y = meanHoneyYield, group=Pop)) + geom_line(aes(colour=Pop)) +
+c<-ggplot(data = grouped, aes(x = Year, y = meanHoneyYield, group=Pop)) + geom_line(aes(colour=Pop)) +
   geom_ribbon(aes(ymin = meanHoneyYield - sdHoneyYield, ymax = meanHoneyYield + sdHoneyYield), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) 
 #plot for Homocigosity
-ggplot(data = grouped, aes(x = Year, y = meanHomocigosity, group=Pop)) + geom_line(aes(colour=Pop)) +
+d<-ggplot(data = grouped, aes(x = Year, y = meanHomocigosity, group=Pop)) + geom_line(aes(colour=Pop)) +
   geom_ribbon(aes(ymin = meanHomocigosity - sdHomocigosity, ymax = meanHomocigosity + sdHomocigosity), alpha = 0.2)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
   scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+ggarrange(a, b, c, d, 
+          labels = c("A", "B", "C","D"),
+          ncol = 2, nrow = 2, common.legend = T)
 
-print("Saving image data")
-save.image("SelectionScenario.RData", Rep)
+
+
+
 
 #plot of mellifera traits
 
@@ -1296,18 +1305,26 @@ groupedMel2<-Melif %>% group_by(Year) %>% summarise(
                                                         Pop= "Mel"
 )
 
-ggplot(data=groupedMel2, aes(x=Year)) + geom_line(aes(y=meanHoneyYieldBrit),colour="darkred") +
-  geom_ribbon(aes(ymin = meanHoneyYieldBrit - sdHoneyYieldBrit, ymax = meanHoneyYieldBrit + sdHoneyYieldBrit), alpha = 0.2)+
- geom_line(aes(y=meanFitnessBrit), colour="steelblue") +
-  geom_ribbon(aes(ymin = meanFitnessBrit - sdFitnessBrit, ymax = meanFitnessBrit + sdFitnessBrit), alpha = 0.2)+
+hola<-ggplot(data=groupedMel2, aes(x=Year)) + geom_line(aes(y=meanHoneyYieldBrit),colour="orange") +
+  geom_ribbon(aes(ymin = meanHoneyYieldBrit - sdHoneyYieldBrit, ymax = meanHoneyYieldBrit + sdHoneyYieldBrit), alpha = 0.1)+
+ geom_line(aes(y=meanFitnessBrit), colour="#484AF5") +
+  geom_ribbon(aes(ymin = meanFitnessBrit - sdFitnessBrit, ymax = meanFitnessBrit + sdFitnessBrit), alpha = 0.1)+
  geom_line(aes(y=meanHoneyYieldEu), colour="red") +
-  geom_ribbon(aes(ymin = meanHoneyYieldEu - sdHoneyYieldEu, ymax = meanHoneyYieldEu + sdHoneyYieldEu), alpha = 0.2)+
- geom_line(aes(y=meanFitnessEu),colour="green") +
-  geom_ribbon(aes(ymin = meanFitnessEu - sdFitnessEu, ymax = meanFitnessEu + sdFitnessEu), alpha = 0.2)+
+  geom_ribbon(aes(ymin = meanHoneyYieldEu - sdHoneyYieldEu, ymax = meanHoneyYieldEu + sdHoneyYieldEu), alpha = 0.1)+
+ geom_line(aes(y=meanFitnessEu),colour="#1CABF7") +
+  geom_ribbon(aes(ymin = meanFitnessEu - sdFitnessEu, ymax = meanFitnessEu + sdFitnessEu), alpha = 0.1)+
 theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) 
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) +
+  labs(y="traits")
 
+library(tidyr)
+df <- groupedMel2 %>% pivot_longer( cols= c("meanHoneyYieldBrit","meanFitnessBrit", "meanHoneyYieldEu","meanFitnessEu"), names_to="Meanval",values_to= "Mean")
+ggplot(data=df, aes(x=Year, y=Mean)) + geom_line(aes(colour=Meanval))+
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+      panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) +
+  labs(y="traits")
 
 
 #plot of carnica traits
@@ -1322,17 +1339,51 @@ groupedCar2<-Carnic %>% group_by(Year) %>% summarise(
   sdFitnessEu = sd(FitnessBrit),
   Pop= "Car")
 
-ggplot(data=groupedCar2, aes(x=Year)) + geom_line(aes(y=meanHoneyYieldBrit),colour="darkred") +
-  geom_ribbon(aes(ymin = meanHoneyYieldBrit - sdHoneyYieldBrit, ymax = meanHoneyYieldBrit + sdHoneyYieldBrit), alpha = 0.2)+
-  geom_line(aes(y=meanFitnessBrit), colour="steelblue") +
-  geom_ribbon(aes(ymin = meanFitnessBrit - sdFitnessBrit, ymax = meanFitnessBrit + sdFitnessBrit), alpha = 0.2)+
+adiso<-ggplot(data=groupedCar2, aes(x=Year)) + geom_line(aes(y=meanHoneyYieldBrit),colour="orange") +
+  geom_ribbon(aes(ymin = meanHoneyYieldBrit - sdHoneyYieldBrit, ymax = meanHoneyYieldBrit + sdHoneyYieldBrit), alpha = 0.1)+
+  geom_line(aes(y=meanFitnessBrit), colour="#484AF5") +
+  geom_ribbon(aes(ymin = meanFitnessBrit - sdFitnessBrit, ymax = meanFitnessBrit + sdFitnessBrit), alpha = 0.1)+
   geom_line(aes(y=meanHoneyYieldEu), colour="red") +
-  geom_ribbon(aes(ymin = meanHoneyYieldEu - sdHoneyYieldEu, ymax = meanHoneyYieldEu + sdHoneyYieldEu), alpha = 0.2)+
-  geom_line(aes(y=meanFitnessEu),colour="green") +
-  geom_ribbon(aes(ymin = meanFitnessEu - sdFitnessEu, ymax = meanFitnessEu + sdFitnessEu), alpha = 0.2)+
+  geom_ribbon(aes(ymin = meanHoneyYieldEu - sdHoneyYieldEu, ymax = meanHoneyYieldEu + sdHoneyYieldEu), alpha = 0.1)+
+  geom_line(aes(y=meanFitnessEu),colour="#1CABF7") +
+  geom_ribbon(aes(ymin = meanFitnessEu - sdFitnessEu, ymax = meanFitnessEu + sdFitnessEu), alpha = 0.1)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) 
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) +
+  labs(y="traits")
+
+
+
+ggarrange(hola, adios, 
+          labels = c("A", "B"),
+          ncol = 1, nrow = 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #Plot of each of the replicas
 
