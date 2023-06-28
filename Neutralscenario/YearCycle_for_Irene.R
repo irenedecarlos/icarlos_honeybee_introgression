@@ -191,7 +191,7 @@ for (Rep in 1:nRep) {
   SP$addTraitA(nQtlPerChr = 100, mean = mean, var = varA, corA = corA,
                name = c("QueenHoneyYield", "QueenFitness"))
   
-  varE <- c(0.75, 0.9 / SP$nWorkers)
+  varE <- c(0.75, 0.9)
   
   # TODO: what is a reasonable environmental correlation between queen and worker effects?
   corE <- matrix(data = c(1.0, 0,
