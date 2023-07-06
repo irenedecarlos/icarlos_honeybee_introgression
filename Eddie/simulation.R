@@ -804,12 +804,6 @@ if (burninOrScenario == "scenario") {
    
     # Virgin queens for splits!
     
-    if (year<11){
-      pImport<-0
-    }else {
-      pImport<-param1Value
-    }
-    
     tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport)) #pull colonies to requeen with imports
     IdImportColonies<-getId(tmp$pulled) #get the ids of the imported colonies
     age0p1 <- list(Mel = tmp$remnant,

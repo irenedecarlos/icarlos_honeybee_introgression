@@ -29,7 +29,7 @@ maintainCarSize <- function(age0 = NULL, age1 = NULL) {
     return(age0)
   }
 }
-
+f
 
 maintainIrelandSizes <- function(age0 = NULL, age1 = NULL) {
   if ((nColonies(age0) + nColonies(age1)) > IrelandSize) { # check if the sum of all colonies is greater than apiary size
@@ -106,9 +106,9 @@ library(ggpubr)
 
 
 # Founder population parameters -------------------------------------------------------------------
-nMelN = 150                  # Number of Mellifera
-nCar =150                   # Number of Carnica
-nMelnI = 150
+nMelN = 1200                  # Number of Mellifera
+nCar =1200                 # Number of Carnica
+nMelnI = 1200
 nChr = 1                     # Number of chromomsome
 nDronesPerQueen = 100
 nSegSites = 100              # Number of segregating sites
@@ -116,9 +116,9 @@ nSegSites = 100              # Number of segregating sites
 # Population parameters -------------------------------------------------------------------
 nRep <- 1                     # Number of repeats
 nYear <- 10                    # Number of years
-IrelandSize<-100              #Ireland population size
-IrelandnISize<-100
-CarSize<-100                  #Carnica pop size
+IrelandSize<-1000              #Ireland population size
+IrelandnISize<-1000
+CarSize<-1000                  #Carnica pop size
 #LigSize<-100                  #Ligustica pop size
 nWorkers <- 10                # Number of workers in a full colony
 nDrones <- 100                 # Number of drones in a full colony (typically nWorkers * 0.2 (not in the example))
@@ -238,20 +238,20 @@ for (Rep in 1:nRep) {
                        #Car = createVirginQueens(x = founderGenomes[(nMelN+nMelnI+1):(nMelN + nMelnI + nCar)]))
  
   basePop <- newPop(founderGenomes)
-  basePopMel <- basePop[1:100]
-  virginQueensMel <- randCross(basePopMel, nProgeny = 1, nCrosses = 150)
+  basePopMel <- basePop[1:400]
+  virginQueensMel <- randCross(basePopMel, nProgeny = 1, nCrosses = 1200)
   virginQueensMel <- SIMplyBee:::editCsdLocus(virginQueensMel, simParamBee = SP)
   virginQueensMel@sex[] <- "F"
   SP$changeCaste(id = virginQueensMel@id, caste = "V")
   
-  basePopMelnI <- basePop[101:200]
-  virginQueensMelnI <- randCross(basePopMelnI, nProgeny = 1, nCrosses = 150)
+  basePopMelnI <- basePop[401:800]
+  virginQueensMelnI <- randCross(basePopMelnI, nProgeny = 1, nCrosses = 1200)
   virginQueensMelnI <- SIMplyBee:::editCsdLocus(virginQueensMelnI, simParamBee = SP)
   virginQueensMelnI@sex[] <- "F"
   SP$changeCaste(id = virginQueensMelnI@id, caste = "V")
   
   basePopCar <- basePop[801:1200]
-  virginQueensCar <- randCross(basePopCar, nProgeny = 1, nCrosses = 150)
+  virginQueensCar <- randCross(basePopCar, nProgeny = 1, nCrosses = 1200)
   virginQueensCar <- SIMplyBee:::editCsdLocus(virginQueensCar, simParamBee = SP)
   virginQueensCar@sex[] <- "F"
   SP$changeCaste(id = virginQueensCar@id, caste = "V")
@@ -763,7 +763,7 @@ for (Rep in 1:nRep) {
       colnames(MeanVarMelnI)<-columnheaders
     } 
     
-    if (year==1 & Rep==1){
+    if (year==1){
       uno<-0
     }else{
       uno<-nrow(colonyRecords) #this is to show where to start recording values on the dataframe
@@ -819,8 +819,7 @@ remove(MeanVarMelnI)
 remove(MeanVarCar)
 } # Rep-loop
 
-coco<-selectColonies(age0$Mel,ID= IdImportColonies)
-coco
+
 
 
 
@@ -842,7 +841,7 @@ for (Rep in 1:nRep) {
   setwd(paste0("C:/Users/Usuario/Desktop/Máster/Bees/test2/Replica",Rep,"/ScenarioRep",Rep))
   
   
-year=12
+year=11
 nYear=20
 for (year in 11:nYear) {
   print("Starting the cycle")
@@ -854,13 +853,13 @@ for (year in 11:nYear) {
   if (year == 1) {
     print("Creating initial colonies")
     age1 <- list(Mel = createMultiColony(x = queens$Mel, n = IrelandSize),
-                 MelnI = createMultiColony(x = queens$Mel, n = IrelandSize),
+                 MelnI = createMultiColony(x = queens$MelnI, n = IrelandSize),
                  Car = createMultiColony(x = queens$Car, n = CarSize))
     
     # If not, promote the age0 to age1, age1 to age2 and remove age2 colonies
   } else {
     age2 <- list(Mel = age1$Mel, MelnI = age1$MelnI, Car = age1$Car) #, Lig = age1$Lig
-    age1 <- list(Mel = age0$Mel, age0$MelnI, Car = age0$Car) #, Lig = age0$Lig
+    age1 <- list(Mel = age0$Mel, MelnI = age0$MelnI, Car = age0$Car) #, Lig = age0$Lig
     age0 <- list(Mel = NULL, MelnI = NULL, Car = NULL) #, Lig = NULL
     age0p1 <- list(Mel = NULL, MelnI = NULL, Car = NULL) #, Lig = NULL
     age0p2 <- list(Mel = NULL, MelnI = NULL, Car = NULL) #, Lig = NULL
@@ -923,12 +922,6 @@ for (year in 11:nYear) {
                       Car = sample.int(n = nColonies(age1$Car), size = 1))
   #Lig = sample.int(n = nColonies(age1$Lig), size = 1))
   # Virgin queens for splits!
-  
-  if (year<11){
-    pImport<-0
-  }else {
-    pImport<-param1Value
-  }
   
   tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport)) #pull colonies to requeen with imports
   IdImportColonies<-getId(tmp$pulled) #get the ids of the imported colonies
@@ -1288,7 +1281,7 @@ for (year in 11:nYear) {
     colnames(MeanVarMelnI)<-columnheaders
   } 
   
-  if (year==1 & Rep==1){
+  if (year==1){
     uno<-0
   }else{
     uno<-nrow(colonyRecords) #this is to show where to start recording values on the dataframe
@@ -1368,15 +1361,39 @@ Melif<-rbind(Rep1M,Rep2M,Rep3M,Rep4M,Rep5M)
 Melifi<-rbind(Rep1Mi,Rep2Mi,Rep3Mi,Rep4Mi,Rep5Mi)
 Carnic<-rbind(Rep1C,Rep2C,Rep3C,Rep4C,Rep5C)
 #Dataframes with mean replicates
-
-Mother<-read.csv("mother.csv")
-
+getwd()
+setwd("C:/Users/Usuario/Desktop/Máster/Bees/Cor0.9_150")
+R1pimp0.1<-read.csv("Rep_1/scenario_param1_0.1_param2_NA/scenarioData_rep1.csv")
+R2imp0.1<-read.csv("Rep_2/scenario_param1_0.1_param2_NA/scenarioData_rep2.csv")
+R3imp0.1<-read.csv("Rep_3/scenario_param1_0.1_param2_NA/scenarioData_rep3.csv")
+R4imp0.1<-read.csv("Rep_4/scenario_param1_0.1_param2_NA/scenarioData_rep4.csv")
+R5imp0.1<-read.csv("Rep_5/scenario_param1_0.1_param2_NA/scenarioData_rep5.csv")
+CombinedDF1<-rbind(R1pimp0.1,R2imp0.1,R3imp0.1,R4imp0.1,R5imp0.1)
 #This calculates the mean and sd through different replicates of the mean IBD, mean Honey Yield, fitness and homocigosity
-CombinedDf<-CombinedDf %>% group_by(Population)
-Carni<-patata2[1:20,]
-Meli<-patata2[21:40,]
+
+Carni1 <-CombinedDF1[1:20,]
+Carni2 <-CombinedDF1[61:80,]
+Carni3 <-CombinedDF1[121:140,]
+Carni4 <-CombinedDF1[181:200,]
+Carni5 <-CombinedDF1[241:260,]
+Carni<-rbind(Carni1,Carni2,Carni3,Carni4,Carni5)
+Meli1 <-CombinedDF1[21:40,]
+Meli2 <-CombinedDF1[81:100,]
+Meli3 <-CombinedDF1[141:160,]
+Meli4 <-CombinedDF1[201:220,]
+Meli5 <-CombinedDF1[261:280,]
+Meli<-rbind(Meli1,Meli2,Meli3,Meli4,Meli5)
+Meliim1 <-CombinedDF1[41:60,]
+Meliim2 <-CombinedDF1[101:120,]
+Meliim3 <-CombinedDF1[161:180,]
+Meliim4 <-CombinedDF1[221:240,]
+Meliim5 <-CombinedDF1[281:300,]
+Meliim<-rbind(Meliim1,Meliim2,Meliim3,Meliim4,Meliim5)
+MelnIm<-CombinedDf[201:300,]
+
+  CombinedDf<-CombinedDF1 %>% group_by(Population)  
 #Carnic
-groupedCar<-MeanVarCar %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
+groupedCar<-Carni %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                         sdIBD = sd(MeanIBD),
                                                     quanIBDl= quantile(MeanIBD,p=0.025),
                                                     quanIBDh= quantile(MeanIBD,p=0.975),
@@ -1395,7 +1412,7 @@ groupedCar<-MeanVarCar %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                         Pop= "Car"
 )
 #Melif
-groupedMel<-MeanVarMel  %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
+groupedMel<-Meli  %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                      sdIBD = sd(MeanIBD),
                                                     quanIBDl= quantile(MeanIBD,p=0.025),
                                                     quanIBDh= quantile(MeanIBD,p=0.975),
@@ -1415,7 +1432,7 @@ groupedMel<-MeanVarMel  %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD)
                                                     
 )
 
-groupedMelnI<-MeanVarMelnI  %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
+groupedMelnI<-Meliim  %>% group_by(Year) %>% summarise(meanIBD = mean(MeanIBD),
                                                          sdIBD = sd(MeanIBD),
                                                          quanIBDl= quantile(MeanIBD,p=0.025),
                                                          quanIBDh= quantile(MeanIBD,p=0.975),
@@ -1438,7 +1455,7 @@ groupedMelnI<-MeanVarMelnI  %>% group_by(Year) %>% summarise(meanIBD = mean(Mean
 #Plot the mean of the replicas
 
 #plot for IBD
-grouped<-rbind(groupedMel,groupedCar, groupedMelnI)
+grouped<-rbind(groupedMel,groupedCar,groupedMelnI)#, groupedMelnI)
 
 a<-ggplot(data = grouped, aes(x = Year, group=Pop)) + geom_line(aes(y= meanIBD, colour=Pop)) +
   geom_ribbon(aes(ymin = quanIBDl, ymax = quanIBDh), alpha = 0.1)+
