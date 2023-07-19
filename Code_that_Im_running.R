@@ -102,17 +102,16 @@ if (burninOrScenario == "burnin") {
   library(Matrix)
   library(SIMplyBee)
   library(dplyr)
-  #library(ggpubr)
   library(tidyr)
-  #library(tidyr)
+
   # TODO: replace with devtools installation from Github once the package is operational
   # Source the development version of AlphaSimR
   
   
   # Founder population parameters -------------------------------------------------------------------
-  nMelN = 300                  # Number of Mellifera
-  nCar =300                   # Number of Carnica
-  nMelnI = 300
+  nMelN = 200                  # Number of Mellifera
+  nCar =200                   # Number of Carnica
+  nMelnI = 200
   nChr = 1                     # Number of chromomsome
   nDronesPerQueen = 100
   nSegSites = 100              # Number of segregating sites
@@ -120,9 +119,9 @@ if (burninOrScenario == "burnin") {
   # Population parameters -------------------------------------------------------------------
   # Number of repeats
   nYear <- 10                    # Number of years
-  IrelandSize<-200              #Ireland population size
-  IrelandnISize<-200
-  CarSize<-200                  #Carnica pop size
+  IrelandSize<-100              #Ireland population size
+  IrelandnISize<-100
+  CarSize<-100                  #Carnica pop size
   #LigSize<-100                  #Ligustica pop size
   nWorkers <- 10                # Number of workers in a full colony
   nDrones <- 100                 # Number of drones in a full colony (typically nWorkers * 0.2 (not in the example))
@@ -188,7 +187,7 @@ if (burninOrScenario == "burnin") {
   
   
   # quick haplo to get the founder genomes for now
-  
+
   
   # STEP 2: Create SP object and write in the global simulation/population parameters
   SP <- SimParamBee$new(founderGenomes, csdChr = ifelse(nChr >= 3, 3, 1), nCsdAlleles = 128)
@@ -232,20 +231,20 @@ if (burninOrScenario == "burnin") {
   #Car = createVirginQueens(x = founderGenomes[(nMelN+nMelnI+1):(nMelN + nMelnI + nCar)]))
   
   basePop <- newPop(founderGenomes)
-  basePopMel <- basePop[1:300]
-  virginQueensMel <- randCross(basePopMel, nProgeny = 1, nCrosses = 300)
+  basePopMel <- basePop[1:100]
+  virginQueensMel <- randCross(basePopMel, nProgeny = 1, nCrosses = nMelN)
   virginQueensMel <- SIMplyBee:::editCsdLocus(virginQueensMel, simParamBee = SP)
   virginQueensMel@sex[] <- "F"
   SP$changeCaste(id = virginQueensMel@id, caste = "V")
   
-  basePopMelnI <- basePop[301:600]
-  virginQueensMelnI <- randCross(basePopMelnI, nProgeny = 1, nCrosses = 300)
+  basePopMelnI <- basePop[101:200]
+  virginQueensMelnI <- randCross(basePopMelnI, nProgeny = 1, nCrosses = nMelnI)
   virginQueensMelnI <- SIMplyBee:::editCsdLocus(virginQueensMelnI, simParamBee = SP)
   virginQueensMelnI@sex[] <- "F"
   SP$changeCaste(id = virginQueensMelnI@id, caste = "V")
   
-  basePopCar <- basePop[801:1100]
-  virginQueensCar <- randCross(basePopCar, nProgeny = 1, nCrosses = 300)
+  basePopCar <- basePop[801:900]
+  virginQueensCar <- randCross(basePopCar, nProgeny = 1, nCrosses = nCar)
   virginQueensCar <- SIMplyBee:::editCsdLocus(virginQueensCar, simParamBee = SP)
   virginQueensCar@sex[] <- "F"
   SP$changeCaste(id = virginQueensCar@id, caste = "V")
@@ -255,7 +254,7 @@ if (burninOrScenario == "burnin") {
   drones <- list(Mel = createDrones(x = virginQueens$Mel[(IrelandSize+1):(nMelN)], nInd = nDronesPerQueen),
                  MelnI = createDrones(x = virginQueens$MelnI[(IrelandnISize+1):(nMelnI)], nInd = nDronesPerQueen),
                  Car = createDrones(x = virginQueens$Car[(CarSize+1):nCar], nInd = nDronesPerQueen))
-  print("funciona")
+
   # Get fathers for Mel, MelCross and Car
   fathersMel <- pullDroneGroupsFromDCA(drones$Mel, n = nInd(virginQueens$Mel[1:IrelandSize]), nDrones = nFathersPoisson)
   fathersMelnI <- pullDroneGroupsFromDCA(drones$MelnI, n = nInd(virginQueens$MelnI[1:IrelandnISize]), nDrones = nFathersPoisson)
@@ -266,34 +265,6 @@ if (burninOrScenario == "burnin") {
                  MelnI = SIMplyBee::cross(x = virginQueens$MelnI[1:IrelandnISize], drones = fathersMelnI),
                  Car = SIMplyBee::cross(x = virginQueens$Car[1:CarSize], drones = fathersCar))
   
-  
-  #Set allele frequency for queens
-  tmp <- c(virginQueens$Mel, virginQueens$MelnI, virginQueens$Car) #, virginQueens$Lig
-  
-  alleleFreqBaseQueens <- calcBeeAlleleFreq(x = getSegSiteGeno(tmp),
-                                            sex = tmp@sex)
-  
-  alleleFreqBaseQueensCar <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Car),
-                                               sex = virginQueens$Car@sex)
-  
-  alleleFreqBaseQueensMelnI <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$MelnI),
-                                                 sex = virginQueens$MelnI@sex)
-  
-  alleleFreqBaseQueensMel <- calcBeeAlleleFreq(x = getSegSiteGeno(virginQueens$Mel),
-                                               sex = virginQueens$Mel@sex)
-  
-  #Get allele freq for csd locus
-  csdLocus <- paste0(SP$csdChr, "_", SP$csdPosStart:SP$csdPosStop)
-  alleleFreqCsdLocusBaseQueens <- alleleFreqBaseQueens[csdLocus]
-  alleleFreqCsdLocusBaseCar <- alleleFreqBaseQueensCar[csdLocus]
-  alleleFreqCsdLocusBaseMelnI <- alleleFreqBaseQueensMelnI[csdLocus]
-  alleleFreqCsdLocusBaseMel <- alleleFreqBaseQueensMel[csdLocus]
-  
-  #Get allele freq for csd Chromosome - this pulls out only the 3rd chromosome
-  alleleFreqCsdChrBaseQueens <- t(as.data.frame(alleleFreqBaseQueens))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueens))))] %>% t()
-  alleleFreqCsdChrBaseCar <- t(as.data.frame(alleleFreqBaseQueensCar))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensCar))))] %>% t()
-  alleleFreqCsdChrBaseMelnI <- t(as.data.frame(alleleFreqBaseQueensMelnI))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMelnI))))] %>% t()
-  alleleFreqCsdChrBaseMel <- t(as.data.frame(alleleFreqBaseQueensMel))[, grepl(pattern = paste0("^", csdChr, "_"), x = colnames(t(as.data.frame(alleleFreqBaseQueensMel))))] %>% t()
   
   year=1
   nYear=10
@@ -373,27 +344,30 @@ if (burninOrScenario == "burnin") {
     # Sample colony for the virgin queens
     print("Create virgin queens, period 1")
     print(Sys.time())
-    virginDonor <- list(Mel = sample.int(n = nColonies(age1$Mel), size = 1),
-                        MelnI = sample.int(n = nColonies(age1$MelnI), size = 1),
-                        Car = sample.int(n = nColonies(age1$Car), size = 1))
+   # virginDonor <- list(Mel = sample.int(n = nColonies(age1$Mel), size = 1),
+   #                    MelnI = sample.int(n = nColonies(age1$MelnI), size = 1),
+   #                   Car = sample.int(n = nColonies(age1$Car), size = 1))
     
     # Virgin queens for splits!
     
     
     pImport<-0
     
-    virginQueens <- list(Mel = createVirginQueens(age1$Mel[[virginDonor$Mel]], nInd = nColonies(age0p1$Mel)),
-                         MelnI = createVirginQueens(age1$MelnI[[virginDonor$MelnI]], nInd = nColonies(age0p1$MelnI)),
-                         Car = createVirginQueens(age1$Car[[virginDonor$Car]], nInd = nColonies(age0p1$Car)))
+    virginQueens <- list(Mel = createVirginQueens(age1$Mel, collapse=T, nInd=10),
+                         MelnI = createVirginQueens(age1$MelnI, collapse=T, nInd=10),
+                         Car = createVirginQueens(age1$Car, collapse=T, nInd=10))
     
-    
+    virginQueens<-list(Mel = mergePops(virginQueens$Mel),
+                       MelnI = mergePops(virginQueens$MelnI),
+                       Car = mergePops(virginQueens$Car))
+               
     #requeen with carnica and mellifera for Mel and carnica for Car
     nColoniesMel<-nColonies(age0p1$Mel) 
     nColoniesCar<-nColonies(age0p1$Car)
     nColoniesMelnI<-nColonies(age0p1$MelnI)
-    age0p1 <- list(Mel = reQueen(age0p1$Mel, queen = virginQueens$Mel[1:nColoniesMel]),
-                   MelnI = reQueen(age0p1$MelnI, queen = virginQueens$MelnI[1:nColoniesMelnI]),
-                   Car = reQueen(age0p1$Car, queen = virginQueens$Car[1:nColoniesCar]))
+    age0p1 <- list(Mel = reQueen(age0p1$Mel, queen = virginQueens$Mel[sample(1:nInd(virginQueens$Mel), size = nColoniesMel, replace = FALSE)]),
+                   MelnI = reQueen(age0p1$MelnI, queen = virginQueens$MelnI[sample(1:nInd(virginQueens$MelnI), size = nColoniesMelnI, replace = FALSE)]),
+                   Car = reQueen(age0p1$Car, queen = virginQueens$Car[sample(1:nInd(virginQueens$Car), size = nColoniesCar, replace = FALSE)]))
     
     
     
@@ -647,15 +621,12 @@ if (burninOrScenario == "burnin") {
     } else {
       DCAMel <- createDCA(c(age1$Mel, age2$Mel))
       fathersMel <- pullDroneGroupsFromDCA(DCA = DCAMel, n = nColonies(age0p2$Mel), nDrones = nFathersPoisson)
-      fathersMel[[1]] <- c(fathersMel[[1]], createDrones(age1$Mel[[1]], nInd = 2))
       age0p2$Mel <- cross(age0p2$Mel, drones = fathersMel)
       DCACar <- createDCA(c(age1$Car, age2$Car))
       fathersCar <-  pullDroneGroupsFromDCA(DCA = DCACar, n = nColonies(age0p2$Car), nDrones = nFathersPoisson)
-      fathersCar[[1]] <- c(fathersCar[[1]], createDrones(age1$Car[[1]], nInd = 2))
       age0p2$Car <- cross(age0p2$Car, drones = fathersCar)
       DCAMelnI <- createDCA(c(age1$MelnI, age2$MelnI))
       fathersMelnI <-  pullDroneGroupsFromDCA(DCA = DCAMelnI, n = nColonies(age0p2$MelnI), nDrones = nFathersPoisson)
-      fathersMelnI[[1]] <- c(fathersMelnI[[1]], createDrones(age1$MelnI[[1]], nInd = 2))
       age0p2$MelnI <- cross(age0p2$MelnI, drones = fathersMelnI)
     }
     
@@ -753,10 +724,15 @@ if (burninOrScenario == "burnin") {
     #track mean IBD and variance of IBD
     
     #this creates two empty dataframes where all the information of each year and each replica will be recorded
+    
+    columnheaders<-c("MeanIBD","VarIBD","Year","Rep","Population","HoneyYieldBrit","sdHoneyYieldBrit","HoneyYieldEu","sdHoneyYieldEu",
+                     "FitnessBrit","sdFitnessBrit","FitnessEu","sdFitnessEu","pheHoneyYieldBrit","sdpheHoneyYieldBrit","pheHoneyYieldEu","sdpheHoneyYieldEu",
+                     "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity","sdHomocigosity","sdIBD")
+    
     if (year==1){ 
       columnheaders<-c("MeanIBD","VarIBD","Year","Rep","Population","HoneyYieldBrit","sdHoneyYieldBrit","HoneyYieldEu","sdHoneyYieldEu",
                        "FitnessBrit","sdFitnessBrit","FitnessEu","sdFitnessEu","pheHoneyYieldBrit","sdpheHoneyYieldBrit","pheHoneyYieldEu","sdpheHoneyYieldEu",
-                       "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity")
+                       "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity","sdHomocigosity","sdIBD")
       MeanVarMel <- data.frame(matrix(ncol = length(columnheaders), nrow = 0)) #dataframe for mellifera
       colnames(MeanVarMel)<-columnheaders
       MeanVarCar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0)) #dataframe for carnica
@@ -771,10 +747,13 @@ if (burninOrScenario == "burnin") {
       uno<-nrow(colonyRecords) #this is to show where to start recording values on the dataframe
     }
     
+    
     #record values of Mellifera population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Mel, year = year, population = "Mel", Rep=Rep)
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$Mel, year = year, population = "Mel", Rep=Rep)
     dos<-nrow(colonyRecords)#this is to show where to end recording values on the dataframe
+    
+    
     
     #create a dataframe with the mellifera mean IBD, variance of IBD, mean Honey yield, mean fitness and mean homocigosity
     newrow1<- data.frame(MeanIBD=mean(colonyRecords[(uno+1):dos,"IBD"]), VarIBD=var(colonyRecords[(uno+1):dos,"IBD"]), Year=year,Rep=Rep,Population="Mel",
@@ -786,12 +765,14 @@ if (burninOrScenario == "burnin") {
                          pheFitnessBrit=mean(colonyRecords[(uno+1):dos,"pheQueens_BritFit"]),sdpheFitnessBrit=sd(colonyRecords[(uno+1):dos,"pheQueens_BritFit"]),
                          pheHoneyYieldEu=mean(colonyRecords[(uno+1):dos,"pheQueens_EuHY"]), sdpheHoneyYieldEu=sd(colonyRecords[(uno+1):dos,"pheQueens_EuHY"]),
                          pheFitnessEu=mean(colonyRecords[(uno+1):dos,"pheQueens_EuFit"]), sdpheFitnessEu=sd(colonyRecords[(uno+1):dos,"pheQueens_EuFit"]),
-                         Homocigosity=mean(colonyRecords[(uno+1):dos,"pHomBrood"]))
+                         Homocigosity=mean(colonyRecords[(uno+1):dos,"pHomBrood"]),sdHomocigosity=sd(colonyRecords[(uno+1):dos,"pHomBrood"]),
+                         sdIBD=sd(colonyRecords[(uno+1):dos,"IBD"]))
     
     #record values for Mellifera without imports population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$MelnI, year = year, population = "MelnI", Rep=Rep)
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age1$MelnI, year = year, population = "MelnI", Rep=Rep)
     tres<-nrow(colonyRecords)#this is to show where to end recording values on the dataframe
+    
     
     #create a dataframe with the mellifera mean IBD, variance of IBD, mean Honey yield, mean fitness and mean homocigosity
     newrow2<- data.frame(MeanIBD=mean(colonyRecords[(dos+1):tres,"IBD"]), VarIBD=var(colonyRecords[(dos+1):tres,"IBD"]), Year=year,Rep=Rep,Population="MelnI",
@@ -803,7 +784,8 @@ if (burninOrScenario == "burnin") {
                          pheFitnessBrit=mean(colonyRecords[(dos+1):tres,"pheQueens_BritFit"]),sdpheFitnessBrit=sd(colonyRecords[(dos+1):tres,"pheQueens_BritFit"]),
                          pheHoneyYieldEu=mean(colonyRecords[(dos+1):tres,"pheQueens_EuHY"]), sdpheHoneyYieldEu=sd(colonyRecords[(dos+1):tres,"pheQueens_EuHY"]),
                          pheFitnessEu=mean(colonyRecords[(dos+1):tres,"pheQueens_EuFit"]), sdpheFitnessEu=sd(colonyRecords[(dos+1):tres,"pheQueens_EuFit"]),
-                         Homocigosity=mean(colonyRecords[(dos+1):tres,"pHomBrood"]))
+                         Homocigosity=mean(colonyRecords[(dos+1):tres,"pHomBrood"]),sdHomocigosity=sd(colonyRecords[(dos+1):tres,"pHomBrood"]),
+                         sdIBD=sd(colonyRecords[(dos+1):tres,"IBD"]))
     
     #record values of Carnica population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car", Rep=Rep)
@@ -820,7 +802,8 @@ if (burninOrScenario == "burnin") {
                          pheFitnessBrit=mean(colonyRecords[(tres+1):cua,"pheQueens_BritFit"]),sdpheFitnessBrit=sd(colonyRecords[(tres+1):cua,"pheQueens_BritFit"]),
                          pheHoneyYieldEu=mean(colonyRecords[(tres+1):cua,"pheQueens_EuHY"]), sdpheHoneyYieldEu=sd(colonyRecords[(tres+1):cua,"pheQueens_EuHY"]),
                          pheFitnessEu=mean(colonyRecords[(tres+1):cua,"pheQueens_EuFit"]), sdpheFitnessEu=sd(colonyRecords[(tres+1):cua,"pheQueens_EuFit"]),
-                         Homocigosity=mean(colonyRecords[(tres+1):cua,"pHomBrood"]))
+                         Homocigosity=mean(colonyRecords[(tres+1):cua,"pHomBrood"]),sdHomocigosity=sd(colonyRecords[(tres+1):cua,"pHomBrood"]),
+                         sdIBD=sd(colonyRecords[(tres+1):cua,"IBD"]))
     
     #Combine what we had in each dataframe with the new info, so each year the dataframe updates with new values
     MeanVarMel<-rbind(MeanVarMel,newrow1)
@@ -953,14 +936,10 @@ if (burninOrScenario == "scenario") {
     # Sample colony for the virgin queens
     print("Create virgin queens, period 1")
     print(Sys.time())
-    virginDonor <- list(Mel = sample.int(n = nColonies(age1$Mel), size = 1),
-                        MelnI = sample.int(n = nColonies(age1$MelnI), size = 1),
-                        Car = sample.int(n = nColonies(age1$Car), size = 1))
-    
+  
     # Virgin queens for splits!
     
-    
-    
+    #requeen with carnica and mellifera for Mel and carnica for Car
     
     pImport<-param1Value
     tmp <- (Mel = pullColonies(age0p1$Mel, p=pImport)) #pull colonies to requeen with imports
@@ -970,9 +949,21 @@ if (burninOrScenario == "scenario") {
                    MelnI = c(age0p1$MelnI, tmp$MelnI$split),
                    Car = c(age0p1$Car, tmp$Car$split))
     
-    virginQueens <- list(Mel = createVirginQueens(age1$Mel[[virginDonor$Mel]], nInd = nColonies(age0p1$Mel)),
-                         MelnI = createVirginQueens(age1$MelnI[[virginDonor$MelnI]], nInd = nColonies(age0p1$MelnI)),
-                         Car = createVirginQueens(age1$Car[[virginDonor$Car]], nInd = nColonies(age0p1$Car)+nColonies(age0p1$MelImport)))
+   
+    virginQueens <- list(Mel = createVirginQueens(age1$Mel, collapse=T, nInd=10),
+                         MelnI = createVirginQueens(age1$MelnI, collapse=T, nInd=10),
+                         Car = createVirginQueens(age1$Car, collapse=T, nInd=10))
+    
+    virginQueens<-list(Mel = mergePops(virginQueens$Mel),
+                       MelnI = mergePops(virginQueens$MelnI),
+                       Car = mergePops(virginQueens$Car))
+    
+    carqueens<-nColonies(age0p1$Car)+nColonies(age0p1$MelImport)
+    
+    virginQueens<-list(Mel = virginQueens$Mel[sample(1:nInd(virginQueens$Mel), size = nColonies(age0p1$Mel), replace = FALSE)],
+                       MelnI =  virginQueens$MelnI[sample(1:nInd(virginQueens$MelnI), size = nColonies(age0p1$MelnI), replace = FALSE)],
+                       Car = virginQueens$Car[sample(1:nInd(virginQueens$Car), size = carqueens, replace = FALSE)])
+                       
     
     
     #requeen with carnica and mellifera for Mel and carnica for Car
@@ -1227,15 +1218,12 @@ if (burninOrScenario == "scenario") {
     } else {
       DCAMel <- createDCA(c(age1$Mel, age2$Mel))
       fathersMel <- pullDroneGroupsFromDCA(DCA = DCAMel, n = nColonies(age0p2$Mel), nDrones = nFathersPoisson)
-      fathersMel[[1]] <- c(fathersMel[[1]], createDrones(age1$Mel[[1]], nInd = 2))
       age0p2$Mel <- cross(age0p2$Mel, drones = fathersMel)
       DCACar <- createDCA(c(age1$Car, age2$Car))
       fathersCar <-  pullDroneGroupsFromDCA(DCA = DCACar, n = nColonies(age0p2$Car), nDrones = nFathersPoisson)
-      fathersCar[[1]] <- c(fathersCar[[1]], createDrones(age1$Car[[1]], nInd = 2))
       age0p2$Car <- cross(age0p2$Car, drones = fathersCar)
       DCAMelnI <- createDCA(c(age1$MelnI, age2$MelnI))
       fathersMelnI <-  pullDroneGroupsFromDCA(DCA = DCAMelnI, n = nColonies(age0p2$MelnI), nDrones = nFathersPoisson)
-      fathersMelnI[[1]] <- c(fathersMelnI[[1]], createDrones(age1$MelnI[[1]], nInd = 2))
       age0p2$MelnI <- cross(age0p2$MelnI, drones = fathersMelnI)
     }
     
@@ -1332,12 +1320,12 @@ if (burninOrScenario == "scenario") {
     
     columnheaders<-c("MeanIBD","VarIBD","Year","Rep","Population","HoneyYieldBrit","sdHoneyYieldBrit","HoneyYieldEu","sdHoneyYieldEu",
                      "FitnessBrit","sdFitnessBrit","FitnessEu","sdFitnessEu","pheHoneyYieldBrit","sdpheHoneyYieldBrit","pheHoneyYieldEu","sdpheHoneyYieldEu",
-                     "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity")
+                     "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity","sdHomocigosity","sdIBD")
     
     if (year==1){ 
       columnheaders<-c("MeanIBD","VarIBD","Year","Rep","Population","HoneyYieldBrit","sdHoneyYieldBrit","HoneyYieldEu","sdHoneyYieldEu",
                        "FitnessBrit","sdFitnessBrit","FitnessEu","sdFitnessEu","pheHoneyYieldBrit","sdpheHoneyYieldBrit","pheHoneyYieldEu","sdpheHoneyYieldEu",
-                       "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity")
+                       "pheFitnessBrit","sdpheFitnessBrit","pheFitnessEu","sdpheFitnessEu","Homocigosity","sdHomocigosity","sdIBD")
       MeanVarMel <- data.frame(matrix(ncol = length(columnheaders), nrow = 0)) #dataframe for mellifera
       colnames(MeanVarMel)<-columnheaders
       MeanVarCar <- data.frame(matrix(ncol = length(columnheaders), nrow = 0)) #dataframe for carnica
@@ -1370,7 +1358,8 @@ if (burninOrScenario == "scenario") {
                          pheFitnessBrit=mean(colonyRecords[(uno+1):dos,"pheQueens_BritFit"]),sdpheFitnessBrit=sd(colonyRecords[(uno+1):dos,"pheQueens_BritFit"]),
                          pheHoneyYieldEu=mean(colonyRecords[(uno+1):dos,"pheQueens_EuHY"]), sdpheHoneyYieldEu=sd(colonyRecords[(uno+1):dos,"pheQueens_EuHY"]),
                          pheFitnessEu=mean(colonyRecords[(uno+1):dos,"pheQueens_EuFit"]), sdpheFitnessEu=sd(colonyRecords[(uno+1):dos,"pheQueens_EuFit"]),
-                         Homocigosity=mean(colonyRecords[(uno+1):dos,"pHomBrood"]))
+                         Homocigosity=mean(colonyRecords[(uno+1):dos,"pHomBrood"]),sdHomocigosity=sd(colonyRecords[(uno+1):dos,"pHomBrood"]),
+                         sdIBD=sd(colonyRecords[(uno+1):dos,"IBD"]))
     
     #record values for Mellifera without imports population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$MelnI, year = year, population = "MelnI", Rep=Rep)
@@ -1388,7 +1377,8 @@ if (burninOrScenario == "scenario") {
                          pheFitnessBrit=mean(colonyRecords[(dos+1):tres,"pheQueens_BritFit"]),sdpheFitnessBrit=sd(colonyRecords[(dos+1):tres,"pheQueens_BritFit"]),
                          pheHoneyYieldEu=mean(colonyRecords[(dos+1):tres,"pheQueens_EuHY"]), sdpheHoneyYieldEu=sd(colonyRecords[(dos+1):tres,"pheQueens_EuHY"]),
                          pheFitnessEu=mean(colonyRecords[(dos+1):tres,"pheQueens_EuFit"]), sdpheFitnessEu=sd(colonyRecords[(dos+1):tres,"pheQueens_EuFit"]),
-                         Homocigosity=mean(colonyRecords[(dos+1):tres,"pHomBrood"]))
+                         Homocigosity=mean(colonyRecords[(dos+1):tres,"pHomBrood"]),sdHomocigosity=sd(colonyRecords[(dos+1):tres,"pHomBrood"]),
+                         sdIBD=sd(colonyRecords[(dos+1):tres,"IBD"]))
     
     #record values of Carnica population
     colonyRecords <- data_rec(datafile = colonyRecords, colonies = age0$Car, year = year, population = "Car", Rep=Rep)
@@ -1405,8 +1395,9 @@ if (burninOrScenario == "scenario") {
                          pheFitnessBrit=mean(colonyRecords[(tres+1):cua,"pheQueens_BritFit"]),sdpheFitnessBrit=sd(colonyRecords[(tres+1):cua,"pheQueens_BritFit"]),
                          pheHoneyYieldEu=mean(colonyRecords[(tres+1):cua,"pheQueens_EuHY"]), sdpheHoneyYieldEu=sd(colonyRecords[(tres+1):cua,"pheQueens_EuHY"]),
                          pheFitnessEu=mean(colonyRecords[(tres+1):cua,"pheQueens_EuFit"]), sdpheFitnessEu=sd(colonyRecords[(tres+1):cua,"pheQueens_EuFit"]),
-                         Homocigosity=mean(colonyRecords[(tres+1):cua,"pHomBrood"]))
-    IdImportColonies1<-IdImportColonies
+                         Homocigosity=mean(colonyRecords[(tres+1):cua,"pHomBrood"]),sdHomocigosity=sd(colonyRecords[(tres+1):cua,"pHomBrood"]),
+                         sdIBD=sd(colonyRecords[(tres+1):cua,"IBD"]))
+
     #Combine what we had in each dataframe with the new info, so each year the dataframe updates with new values
     MeanVarMel<-rbind(MeanVarMel,newrow1)
     MeanVarMelnI<-rbind(MeanVarMelnI,newrow2)
