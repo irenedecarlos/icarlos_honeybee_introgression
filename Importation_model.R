@@ -1284,6 +1284,8 @@ if (burninOrScenario == "scenario") {
     age1CarqueensID<-queensID1[1:Nselectcolon1] #select the queens ids that will not collapse
     
     #Collapse 
+    Carqueenpre<-nColonies(selectColonies(age0$Mel,ID= IdImportColonies))
+    Carqueenpre1<-nColonies(selectColonies(age1$Mel,ID= IdImportColonies))
     age0 <- list(Mel = selectColonies(age0$Mel, ID = age0MelqueensID),
                  MelnI = selectColonies(age0$MelnI, ID = age0MelnIqueensID),
                  Car = selectColonies(age0$Car, ID = age0CarqueensID))
@@ -1293,6 +1295,11 @@ if (burninOrScenario == "scenario") {
                  Car = selectColonies(age1$Car, ID= age1CarqueensID))
     
     age2 <- list(Mel = NULL, MelnI = NULL, Car = NULL) #We don't need this but just to show the workflow!!!
+    Carqueenpost<-nColonies(selectColonies(age0$Mel,ID= IdImportColonies))
+    Carqueenpost1<-nColonies(selectColonies(age1$Mel,ID= IdImportColonies))
+    deadqueens<-(Carqueenpre-Carqueenpost)+(Carqueenpre1-Carqueenpost1)
+    print(deadqueens)
+    
     
     # Maintain the number of colonies ------------------------------------------
     # Keep all of age1, age0 swarmed so we build it up with some splits, while we remove (sell) the other splits
