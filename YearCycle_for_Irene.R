@@ -1362,7 +1362,7 @@ Melifi<-rbind(Rep1Mi,Rep2Mi,Rep3Mi,Rep4Mi,Rep5Mi)
 Carnic<-rbind(Rep1C,Rep2C,Rep3C,Rep4C,Rep5C)
 #Dataframes with mean replicates
 getwd()
-setwd("C:/Users/Usuario/Desktop/Máster/Bees/Cor0.5_200")
+setwd("C:/Users/Usuario/Desktop/Máster/Bees/Cor0.9_150")
 R1pimp0.1<-read.csv("Rep_1/scenario_param1_0.1_param2_NA/scenarioData_rep1.csv")
 R2imp0.1<-read.csv("Rep_2/scenario_param1_0.1_param2_NA/scenarioData_rep2.csv")
 R3imp0.1<-read.csv("Rep_3/scenario_param1_0.1_param2_NA/scenarioData_rep3.csv")
@@ -1646,5 +1646,3 @@ motherburnin<-rbind(Rep1,Rep2,Rep3,Rep4,Rep5)
 motherburnin
 
 load("C:/Users/Usuario/Honeybeeimports/5-burnin-5-selection-run-by-my-computer.RData")
-
-install.packages("devtools")
